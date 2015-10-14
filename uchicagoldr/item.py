@@ -36,6 +36,12 @@ class Item(object):
         else:
             return False
 
+    def get_root_path(self):
+        return self.root_path
+
+    def set_root_path(self,new_root_path):
+        self.root_path=new_root_path
+
     def set_readability(self, readable_notice):
         self.can_read = readable_notice
 

@@ -1,4 +1,4 @@
-from item import Item
+from uchicagoldr.item import Item
 from re import escape,split
 
 class TextDocument(Item):
