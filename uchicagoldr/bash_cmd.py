@@ -1,30 +1,34 @@
 
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import run, PIPE, STDOUT, TimeoutExpired, CalledProcessError
 
 class BashCommand(object):
     args = []
     status = None
     cmd_out = None
     data = None
+    timeout = None
+    command_ran = False
 
     def __init__(self, arguments):
         self.args = arguments
 
     def run_command(self):
         assert isinstance(self.args,list)
-        cmd = Popen(self.args, stdout = PIPE, stderr = STDOUT)
+        try:
+            cmd = run(self.args, stdout = PIPE, stderr = STDOUT, timeout=self.timeout)
+            self.command_ran = True
+        except Exception as e:
+            self.cmd_out = e
+            return(False,e)
         try:
             self.cmd_out = cmd
         except Exception as e:
+            self.cmd_out = e
             return (False, e)
-        return (True, None)
+        return (True, cmd)
 
-    def read_data(self):
-        try:
-            self.data = self.cmd_out.communicate()
-        except Exception as e:
-            return (False,e)
-        return (True,None)
+    def get_data(self):
+        return (self.command_ran, self.cmd_out)
 
     def get_args(self):
         return self.args
@@ -33,5 +37,8 @@ class BashCommand(object):
         assert isinstance(new_args,list)
         self.args=new_args
 
-    def get_data(self):
-        return self.data
+    def set_timeout(self,new_timeout):
+        self.timeout=new_timeout
+
+    def get_timeout(self):
+        return self.timeout
