@@ -30,6 +30,18 @@ class Batch(object):
         self.root = root
         self.items = []
 
+
+    def find_batch_identifier(self):
+        url_request = urlopen("https://y1.lib.uchicago.edu/cgi-bin/minter/" + \
+                              "noid?action=minter&n=1")
+        if url_data.status == 200:
+            url_data = url_request.read()
+        else:
+            raise ValueError("Could not fetch batch identifier from " + \
+                             "RESTful NOID minter")
+        return url_data.split('61001/').rstrip()
+        
+        
     def find_items(self, from_db = False, from_directory = False):
         output = None
         if from_directory:
