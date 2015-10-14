@@ -30,6 +30,13 @@ class Batch(object):
         self.root = root
         self.items = []
 
+    def add_item(self,new_item):
+        try:
+            assert isinstance(new_item,Item)
+            self.items.append(new_item)
+            return (True,None)
+        except Exception as e:
+            return (False,e)
 
     def find_batch_identifier(self):
         url_request = urlopen("https://y1.lib.uchicago.edu/cgi-bin/minter/" + \
