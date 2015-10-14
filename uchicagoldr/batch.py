@@ -1,0 +1,142 @@
+
+from collections import Iterable
+from os import access, listdir, rmdir, R_OK
+from os.path import exists, join, isabs, isfile, isdir, relpath
+from sqlalchemy.orm.query import Query
+from types import GeneratorType
+
+from uchicagoldr.database import Database
+from uchicagoldr.item import Item
+
+class Batch(object):
+    """
+    This class holds a list of files as Item instances in a new accession
+    """
+
+    items = []
+    directory_path = ""
+    directory_root = ""
+    identifier = ""
+
+    def __init__(self, root, directory = None,
+                 query = None):
+        assert exists(root)        
+        if query:
+            assert isinstance(query, Query)
+            self.query = query
+        elif directory:
+            assert exists(directory)
+            self.directory_path = directory
+        self.root = root
+        self.items = []
+
+    def find_items(self, from_db = False, from_directory = False):
+        output = None
+        if from_directory:
+            if exists(self.directory_path):
+                output = self.walk_directory_picking_files(self.directory_path)
+        elif from_db:
+            output = self.walk_database_query_picking_files()
+            
+        else:
+            output = None
+        return output
+            
+    def walk_directory_picking_files(self, directory):
+        """
+        walks a directory tree and creates a generator full of Item instances
+        for each regular file
+        """
+        flat_list = listdir(self.directory_path)
+        while flat_list:
+            node=flat_list.pop()
+            fullpath=join(directory,node)
+            if isfile(fullpath):
+                i=Item(fullpath,self.directory_root)
+                yield i
+            elif isdir(fullpath):
+                for child in listdir(fullpath):
+                    flat_list.append(join(fullpath,child))
+
+    def walk_database_query_picking_files(self):
+        for n in self.query:
+            item = Item(join(self.root, n.accession, n.filepath), self.root)
+            if getattr(n,'checksum',None):
+                item.remote_hash = n.checksum
+            if getattr(n,'size',None):
+                item.remote_size = n.size
+            if getattr(n,'mimetype',None):
+                item.remote_mimetype = n.mimetype
+            yield item
+    
+    def set_items(self, generator_object):
+        assert isinstance(generator_object, GeneratorType)
+        self.items = generator_object
+
+    def get_items(self):
+        return self.items
+
+    def convert_to_relative_path(self, a_path):
+        if not self.directory_root:
+            raise ValueError("There is no directory root on this batch!")
+        else:
+            directory_relative_to_root = relpath(self.directory_path,
+                                                 self.directory_root)
+        return directory_relative_to_root
+
+    def set_root_path(self, a_path):
+        if not isabs(a_path):
+            raise ValueError("The path you entered is not absolute!")
+        else:
+            self.directory_root = a_path
+        return True
+
+    def define_path(self, a_path):
+        if not exists(a_path):
+            raise ValueError("path does not exist!")
+        else:
+            self.directory_path = a_path
+        return True
+
+    def get_accession_from_relative_path(self, a_path):
+        if isabs(a_path):
+            raise ValueError("cannot get accession from an absolute path")
+        else:
+            accession, *tail = a_path.split('/')
+            self.accession = accession
+        return True
+
+    def collect_from_directory(self, directory_path, directory_root):
+        assert isinstance(directory_path, str)
+        self.define_path(directory_path)
+        self.set_root_path(directory_root)
+        directory_relative_to_root = self. \
+                                     convert_to_relative_path(directory_path) 
+        self.get_accession_from_relative_path(directory_relative_to_root)
+        generator_of_items = self.walk_directory_picking_files( \
+                                                        self.directory_path \
+        )
+        self.items = generator_of_items
+            
+    def collect_from_database(self, database_object, queryable, query_object,
+                              directory_root):
+        query = database_object.session.query(queryable).filter(query_object)
+        if query.count() > 0:
+            generator_of_items = self.walk_database_query_picking_files( \
+                                                                query, \
+                                                                directory_root,
+            )
+            self.items = generator_of_items
+        else:
+            raise ValueError("Your database query did not have any results!")
+
+    def set_items(self, some_iterable):
+        assert isinstance(some_iterable, Iterable)
+        self.items = some_iterable
+
+    def clean_out_batch(self):
+        """
+        attempts to delete the batch directory; it will fail if
+        the batch directory is not empty
+        """
+        rmdir(self.directory)
