@@ -19,13 +19,12 @@ from os.path import exists,splitext,basename,isdir,isfile
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
-    
+
 def audioConverter(item):
     if not exists(item.get_file_path()+'.presform.wav'):
         audioConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),item.get_file_path()+'.presform.wav']
         audioConvertCommand=BashCommand(audioConvertArgs)
         audioConvertCommand.run_command()
-        audioConvertCommand.read_data()
         logger.debug(audioConvertCommand.get_data())
         return audioConvertCommand.get_data()
     else:
@@ -37,7 +36,6 @@ def videoConverter(item):
         videoConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),'-vcodec','rawvideo','-acodec','pcm_u24le','-pix_fmt','uyvy422','-vtag','2vuy',item.get_file_path()+".presform.avi"]
         videoConvertCommand=BashCommand(videoConvertArgs)
         videoConvertCommand.run_command()
-        videoConvertCommand.read_data()
         logger.debug(videoConvertCommand.get_data())
         return videoConvertCommand.get_data()
     else:
@@ -49,11 +47,11 @@ def imageConverter(item):
         imageConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),item.get_file_path()+'.presform.tif']
         imageConvertCommand=BashCommand(imageConvertArgs)
         imageConvertCommand.run_command()
-        imageConvertCommand.read_data()
         logger.debug(imageConvertCommand.get_data())
         return imageConvertCommand.get_data()
     else:
         logger.info("Image (tif) preservaiton format for file exists. Not Clobbering.")
+        return(None,None)
 
 def gifConverter(item):
     if not exists(item.get_file_path()+'.presform'):
@@ -63,25 +61,25 @@ def gifConverter(item):
         gifConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),item.get_file_path()+'.presform/output%04d.presform.tif']
         gifConvertCommand=BashCommand(gifConvertArgs)
         gifConvertCommand.run_command()
-        gifConvertCommand.read_data()
         logger.debug(gifConvertCommand.get_data())
         return gifConvertCommand.get_data()
     else:
         logger.info("Image (tif) preservation format for file exists. Not Clobbering.")
+        return(None,None)
 
 def zipConverter(item):
     if not exists(item.get_file_path()+'.presform.extracted'):
         unzipCommandArgs=['7z','x','-o'+item.get_file_path()+'.presform.extracted',item.get_file_path()]
         unzipCommand=BashCommand(unzipCommandArgs)
         unzipCommand.run_command()
-        unzipCommand.read_data()
-        print(unzipCommand.read_data())
-        b=Batch(root,item.get_file_path()+'.presform.extracted')
-        for item in b.find_items(from_directory=True):
-            itemStack.append(item)
+        if unzipCommand.get_data()[1].returncode == 0:
+            b=Batch(root,item.get_file_path()+'.presform.extracted')
+            for item in b.find_items(from_directory=True):
+                itemStack.append(item)
         return unzipCommand.get_data()
     else:
         logger.info("Already extracted.")
+        return(None,None)
 
 def officeConverter(item):
     if not exists(item.get_file_path()+'.presform.pdf'):
@@ -92,7 +90,6 @@ def officeConverter(item):
         officeConvertArgs=['/Applications/LibreOffice.app/Contents/MacOS/soffice','--headless','--convert-to','pdf','--outdir','/tmp/officeConv',item.get_file_path()]
         officeConvertCommand=BashCommand(officeConvertArgs)
         officeConvertCommand.run_command()
-        officeConvertCommand.read_data()
         cpCommandArgs=['cp','/tmp/officeConv/'+basename(fileName)+'.pdf',item.get_file_path()+'.presform.pdf']
         cpCommand=BashCommand(cpCommandArgs)
         cpCommand.run_command()
@@ -103,6 +100,7 @@ def officeConverter(item):
         return officeConvertCommand.get_data()
     else:
         logger.info("Office (PDF) preservation format for file exists. Not Clobbering.")
+        return(None,None)
 
 def xlsConverter(item):
     if not exists(item.get_file_path()+'.presform.csv'):
@@ -113,7 +111,6 @@ def xlsConverter(item):
         officeConvertArgs=['/Applications/LibreOffice.app/Contents/MacOS/soffice','--headless','--convert-to','csv','--outdir','/tmp/officeConv',item.get_file_path()]
         officeConvertCommand=BashCommand(officeConvertArgs)
         officeConvertCommand.run_command()
-        officeConvertCommand.read_data()
         cpCommandArgs=['cp','/tmp/officeConv/'+basename(fileName)+'.csv',item.get_file_path()+'.presform.csv']
         cpCommand=BashCommand(cpCommandArgs)
         cpCommand.run_command()
@@ -124,6 +121,7 @@ def xlsConverter(item):
         return officeConvertCommand.get_data()
     else:
         logger.info("Office (CSV) preservation format for file exists. Not Clobbering.")
+        return(None,None)
 
 def txtConverter(item):
     if not exists(item.get_file_path()+'.presform.txt'):
@@ -134,7 +132,6 @@ def txtConverter(item):
         officeConvertArgs=['/Applications/LibreOffice.app/Contents/MacOS/soffice','--headless','--convert-to','txt:Text','--outdir','/tmp/officeConv',item.get_file_path()]
         officeConvertCommand=BashCommand(officeConvertArgs)
         officeConvertCommand.run_command()
-        officeConvertCommand.read_data()
         cpCommandArgs=['cp','/tmp/officeConv/'+basename(fileName)+'.txt',item.get_file_path()+'.presform.txt']
         cpCommand=BashCommand(cpCommandArgs)
         cpCommand.run_command()
@@ -145,63 +142,150 @@ def txtConverter(item):
         return officeConvertCommand.get_data()
     else:
         logger.info("Office (CSV) preservation format for file exists. Not Clobbering.")
+        return(None,None)
 
 def htmlConverter(item):
-    return
+    return (None,None)
 
 def parse(item):
-    #Skip cases
-    if ".presform" in item.find_file_name():
-        return (0,None)
-
-    if ".DS_Store" == item.find_file_name():
-        return (0,None)
-
-    if item.find_file_name()[0] == ".":
-        return(0,None)
-
     #Handy dandy lists
     audioExtensions=['.mp3','.wma','.wav','.aiff','.midi']
-    audioMimes=['audio/x-aiff','audio/basic','audio/midi','audio/mp4','audio/mpeg','audio/x-ape','audio/x-pn-realaudio','audio/x-$']
+    audioMimes=['audio/x-aiff','audio/basic','audio/midi','audio/mp4','audio/mpeg','audio/x-ape','audio/x-pn-realaudio','audio/x-wav']
     officeExtensions=['.docx','.doc','.xls','.xlsx','.ppt','.pptx','.pdf','.rtf']
-    officeMimes=["application/msword","application/vnd.ms-office","application/vnd.ms-excel","application/vnd.ms-powerpoint","app$"]
+    officeMimes=["application/msword","application/vnd.ms-office","application/vnd.ms-excel","application/vnd.ms-powerpoint","application/vnd.oasis.opendocument.spreadsheet","application/vnd.oasis.opendocument.text","application/vnd.openxmlformats-officedocument.presentationml.presentation","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","application/vnd.openxmlformats-officedocument.wordprocessingml.document",'text/rtf','application/pdf']
     videoExtensions=[".wmv",".vob"]
-    videoMimes=["video/quicktime",'video/3gpp','video/mp2p','video/mp4','video/mpeg','video/mpv','video/x-flv','video/x-m4v','vid$']
+    videoMimes=["video/quicktime",'video/3gpp','video/mp2p','video/mp4','video/mpeg','video/mpv','video/x-flv','video/x-m4v','video/x-ms-asf','video/x-msvideo']
     imageExtensions=['.jpg','.jpeg','.png','.pct']
-    imageMimes=["image/jpeg","image/x-ms-bmp",'image/x-ms-bmp','image/png','image/x-paintnet','image/x-portable-bitmap','image/x-$']
+    imageMimes=["image/jpeg","image/x-ms-bmp",'image/x-ms-bmp','image/png','image/x-paintnet','image/x-portable-bitmap','image/x-portable-greymap','text/html']
     zipExtensions=['.zip','.tar.gz','.7z','.rar']
-    zipMimes=['application/x-7z-compressed','application/x-bzip2','application/x-gzip','application/x-rar','application/x-stuffit$']
+    zipMimes=['application/x-7z-compressed','application/x-bzip2','application/x-gzip','application/x-rar','application/x-stuffit','application/x-tar','application/zip']
     htmlExtensions=['.html','.htm']
     htmlMimes=['text/html']
+
+    excludeExtensions=['.exe']
+    excludeMimes=['application/x-executable']
+
+    #Skip cases
+    if ".presform" in item.find_file_name():
+        logger.info("Skipping - presform")
+        return
+
+    if ".DS_Store" == item.find_file_name():
+        logger.info("Skipping - .DS_Store")
+        return
+
+    if item.find_file_name()[0] == ".":
+        logger.info("Skipping - dotfile")
+        return
+
+    if item.find_file_extension() in excludeExtensions:
+        logger.info("Skipping - excluded extension")
+        return
+
+    if item.find_file_mime_type() in excludeMimes:
+        logger.info("Skipping - excluded mime type")
+        return
 
     #Conversion conditionals
     if item.find_file_extension() in audioExtensions or item.find_file_mime_type() in audioMimes:
         logger.info("Audio extension or mime detected")
-        audioConverter(item)
+        result=audioConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() in officeExtensions or item.find_file_mime_type() in officeMimes:
         logger.info("Office extension or mime detected")
-        officeConverter(item)
+        result=officeConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() == ".xls" or item.find_file_extension() == ".xlsx":
         logger.info("XLS extension detected")
-        xlsConverter(item)
+        result=xlsConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() == ".doc" or item.find_file_extension() == ".docx":
         logger.info("DOC extension detected")
-        txtConverter(item)
+        result=txtConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() in videoExtensions or item.find_file_mime_type() in videoMimes:
         logger.info("Video extension or mime detected")
-        videoConverter(item)
+        result=videoConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() in imageExtensions or item.find_file_mime_type() in imageMimes:
         logger.info("Image extension or mime detected")
-        imageConverter(item)
+        result=imageConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() == ".gif":
         logger.info("GIF extension detected")
-        gifConverter(item)
+        result=gifConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() in zipExtensions or item.find_file_mime_type() in zipMimes:
         logger.info("Zip extension or mime detected")
-        zipConverter(item)
+        result=zipConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+
     if item.find_file_extension() in htmlExtensions or item.find_file_mime_type() in htmlMimes:
         logger.info("HTML extension or mime detected")
-        htmlConverter(item)
+        result=htmlConverter(item)
+        if result[0] == False:
+            logger.warn("Conversion failed!")
+        elif result[0] == None:
+            pass
+        else:
+            logger.debug(str(result))
+            logger.info("Conversion successful")
+    return
 
 def main():
     # start of parser boilerplate
@@ -229,9 +313,9 @@ def main():
     )
     # optionally save the log to a file. set a location or use the default constant
     parser.add_argument( \
-                         '-l','--log_loc',help="save logging to a file",
-                         action="store_const",dest="log_loc",
-                         const='./current.log' \
+                         '-l','--log_loc',help="save logging to a file",\
+                         dest="log_loc",\
+                         \
     )
     parser.add_argument("item", help="Enter a noid for an accession or a " + \
                         "directory path that you need to validate against" + \
