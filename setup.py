@@ -21,3 +21,4 @@ setup(
     long_description = open('README.txt').read(),
     install_requires = ['python-magic == 0.4.6',
                         'SQLAlchemy >= 1.0.8'])
+    long_description = open('README.txt').read())
