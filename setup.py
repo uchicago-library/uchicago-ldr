@@ -4,13 +4,13 @@ setup(
     name = 'uchicagoldr',
     version = '1.0.0',
     author = "Tyler Danstrom,Brian Balsamo",
-    author_email = "tdanstrom@uchicago.edu,balsamo@uchicago.edu"
+    author_email = "tdanstrom@uchicago.edu,balsamo@uchicago.edu",
     packages = ['uchicagoldr'],
     description = """\
     A set of base classes for interacting with University of Chicago library 
     digital repository objects
-    """
-    keywords = ["uchicago","repository","file-level","processing"]
+    """,
+    keywords = ["uchicago","repository","file-level","processing"],
     classifiers = [
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
