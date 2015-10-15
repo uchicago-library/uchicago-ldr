@@ -20,6 +20,7 @@ from sqlalchemy import Table
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.database import Database
+from uchicagoldr.digitalobject import DigitalObject
 
 def main():
     parser = ArgumentParser(description="{description}". \
@@ -109,7 +110,7 @@ def main():
             item.set_accession(accession)            
             canon = item.find_canonical_filepath()            
             item.set_canonical_filepath(canon)
-
+            logger.debug(item)
             search_pattern = item.find_matching_object_pattern( \
                     re_compile("(mvol)/(\w{4})/(\w{4})/(\w{4})/" +  
                                "(mvol)-(\w{4})-(\w{4})-(\w{4})"))
@@ -117,7 +118,7 @@ def main():
             if search_pattern.status == True:
                 potential_identifier = '-'.join(search_pattern.data.groups())
                 is_an_object_already_present = [x for x in all_objects \
-                                                if x.identifier == \
+                                                if x.get_identifier() == \
                                                 potential_identifier]
                 if is_an_object_already_present:
                     logger.debug("found this id already")

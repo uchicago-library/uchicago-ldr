@@ -25,6 +25,9 @@ class DigitalObject(object):
                                                      None \
             )
 
+    def get_identifier():
+        return self.object_identifier
+    
     def classify_file_type(self, control_type_data):
         page_pattern = control_type_data.get('page_file')
         object_pattern = control_type_data.get('object_file')
