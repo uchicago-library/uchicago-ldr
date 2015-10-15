@@ -86,7 +86,7 @@ def main():
         if textDocs.validate_items():
             logger.info("Beep boop computing TFIDFs")
             logger.info("Finding terms")
-            textDocs.set_terms(textDocs.find_terms())
+            textDocs.set_terms(pruneTerms(textDocs.find_terms()))
             logger.info("Finding unique terms")
             textDocs.set_unique_terms(textDocs.find_unique_terms())
             logger.info("Finding term counts")

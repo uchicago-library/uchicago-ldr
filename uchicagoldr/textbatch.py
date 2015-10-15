@@ -93,7 +93,8 @@ class TextBatch(Batch):
             item.set_unique_terms(item.find_unique_terms())
             item.set_term_counts(item.find_term_counts())
             for termCount in item.get_term_counts():
-                termNums.append((termCount[0],termCount[1]/float(self.get_doc_counts()[termCount[0]])))
+                if termCount[0] in self.get_terms():
+                    termNums.append((termCount[0],termCount[1]/float(self.get_doc_counts()[termCount[0]])))
             tfidfs[item.get_file_path()]=termNums
         return tfidfs
 
