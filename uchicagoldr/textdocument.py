@@ -1,5 +1,6 @@
-from uchicagoldr.item import Item
 from re import escape,split
+
+from uchicagoldr.item import Item
 
 class TextDocument(Item):
     """
@@ -27,7 +28,7 @@ class TextDocument(Item):
         return self.terms
 
     def find_unique_terms(self):
-        assert(self.terms)
+        assert(self.terms is not [])
         uniqueTerms=set(self.terms)
         return uniqueTerms
 
@@ -38,7 +39,7 @@ class TextDocument(Item):
         return self.unique_terms
 
     def find_term_counts(self):
-        assert(self.terms)
+        assert(self.terms is not [])
         counts=[]
         uniques=self.find_unique_terms()
         for term in uniques:

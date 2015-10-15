@@ -10,13 +10,14 @@ class TextBatch(Batch):
     terms=[]
     unique_terms=[]
     term_counts=[]
-    doc_counts=[]
+    doc_counts=Counter()
     tf_idfs=[]
 
     def __init__(self,path,root):
         Batch.__init__(self,root,path)
 
     def validate_items(self):
+        assert(self.get_items() != [])
         for item in self.get_items():
             try:
                 assert isinstance(item,TextDocument)
@@ -25,6 +26,7 @@ class TextBatch(Batch):
         return True
 
     def find_terms(self):
+        assert(self.get_items() != [])
         itemTerms=[]
         for item in self.get_items():
             assert isinstance(item,TextDocument)
@@ -39,10 +41,12 @@ class TextBatch(Batch):
         return self.terms
 
     def find_doc_counts(self):
-        assert(self.unique_terms is not [])
+        assert(self.unique_terms != [])
+        assert(self.get_items != [])
         counts=Counter()
         for term in self.unique_terms:
             for item in self.get_items():
+                assert(item.get_terms != [])
                 if term in item.get_terms():
                     counts[term]+=1
         return counts
@@ -54,7 +58,7 @@ class TextBatch(Batch):
         return self.doc_counts
 
     def find_unique_terms(self):
-        assert(self.terms is not [])
+        assert(self.terms != [])
         uniqueTerms=set(self.terms)
         return uniqueTerms
 
@@ -65,9 +69,10 @@ class TextBatch(Batch):
         return self.unique_terms
 
     def find_term_counts(self):
-        assert(self.terms is not [])
+        assert(self.terms != [])
+        assert(self.get_unique_terms() != {})
         counts=[]
-        uniques=self.find_unique_terms()
+        uniques=self.get_unique_terms()
         for term in uniques:
             counts.append((term,self.terms.count(term)))
         return counts
@@ -77,3 +82,21 @@ class TextBatch(Batch):
 
     def get_term_counts(self):
         return self.term_counts
+
+    def find_tf_idfs(self):
+        tfidfs={}
+        for item in self.get_items():
+            termNums=[]
+            item.set_terms(item.find_terms())
+            item.set_term_counts(item.find_term_counts())
+            for termCount in item.get_term_counts():
+                termNums.append((termCount[0],termCount[1]/float(self.get_doc_counts()[termCount[0]])))
+            tfidfs[item.get_file_path()]=termNums
+        return tfidfs
+
+    def get_tf_idfs(self):
+        return self.tf_idfs
+
+    def set_tf_idfs(self,newTFIDFs):
+        assert isinstance(newTFIDFs,dict)
+        self.tf_idfs=newTFIDFs

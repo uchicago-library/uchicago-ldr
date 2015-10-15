@@ -19,29 +19,7 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.textdocument import TextDocument
 from uchicagoldr.textbatch import TextBatch
-
-def pruneTerms(terms):
-    newTerms=[]
-    stopList=['','the','and','if','then','when','to','of','in','a','i','that','received','was','as','is','you','with','this','were','not','has','"','it','at','he','contents','earthlink','received','*','she','id','we','yahoo','http://www','my','for','am','her','from','have','on','received','be','content-type:','would','they','edu','are','by','been','had','our','an','will','com','or','who','me','who','about','your','his','but','university','chicago','re:','do','mr','could','uchicago','midway','(8','received:','esmtp','so','can','bsd','subject:','(cst)','there','which','no','yes','smtp','date:','them','said','smtp','from:','to:','net','very','also','org','no','all','there','&nbsp''(cdt)','their','ms','mrs','ll','how','org','one','what','us','those','into','what','more','those','into','because','pp','out','than','many','any','only','some','such','its','these',"new","must",'way','up','ve','again','too','fwd']
-    days=['mon','tue','wed','thu','fri','sat','sun']
-    months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
-    stopList=stopList+days+months
-    for term in terms:
-        if term in stopList:
-            continue
-        if "\\" in term:
-            continue
-        if sum(c.isalpha() for c in term) < len(term)/float(2):
-            continue
-        if term.isdigit():
-            continue
-        if len(term) > 20:
-            continue
-        if len(term) == 1:
-            continue
-        else:
-            newTerms.append(term)
-    return newTerms
+from uchicagoldr.textprocessingfunctions import pruneTerms
 
 def main():
     # start of parser boilerplate
@@ -106,27 +84,21 @@ def main():
                 textDoc=TextDocument(item.get_file_path(),item.get_root_path())
                 textDocs.add_item(textDoc)
         if textDocs.validate_items():
-            logger.info("Finding terms")
-            textDocs.set_terms(pruneTerms(textDocs.find_terms()))
-            logger.info("Getting unique terms")
-            textDocs.set_unique_terms(textDocs.find_unique_terms())
-            logger.info("Getting doc counts")
-            textDocs.set_doc_counts(textDocs.find_doc_counts())
             logger.info("Beep boop computing TFIDFs")
-            for item in textDocs.get_items():
-                item.set_terms(pruneTerms(item.find_terms()))
-                item.set_term_counts(item.find_term_counts())
-                tfidfs=[]
-                for term in item.get_term_counts():
-                   tfidfs.append((term[0],term[1]/float(textDocs.get_doc_counts()[term[0]])))
-                numToPrint=5
-                firstX=sorted(tfidfs,key=lambda tup: tup[1],reverse=True)[0:numToPrint-1]
-                print(item.get_file_path()+"\n"+str(firstX)+"\n")
-                
-            
-#            terms=item.find_terms()
-#            terms=pruneTerms(terms)
-#            print(item.find_file_name()+str(terms[0:5]))
+            logger.info("Finding terms")
+            textDocs.set_terms(textDocs.find_terms())
+            logger.info("Finding unique terms")
+            textDocs.set_unique_terms(textDocs.find_unique_terms())
+            logger.info("Finding term counts")
+            textDocs.set_term_counts(textDocs.find_term_counts())
+            logger.info("Finding doc counts")
+            textDocs.set_doc_counts(textDocs.find_doc_counts())
+            logger.info("Finding TFIDFs")
+            textDocs.set_tf_idfs(textDocs.find_tf_idfs())
+            numToPrint=5
+            for entry in textDocs.get_tf_idfs():
+                firstX=sorted(textDocs.get_tf_idfs()[entry],key=lambda tup: tup[1],reverse=True)[0:numToPrint]
+                print(entry+str(firstX))
             
         return 0
     except KeyboardInterrupt:
