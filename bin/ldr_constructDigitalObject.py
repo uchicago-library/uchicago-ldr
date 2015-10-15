@@ -139,28 +139,38 @@ def main():
             search_pattern = item.find_matching_object_pattern( \
                     re_compile(args.object_mapping.get('Object', 'pattern')) \
             )
-
             if search_pattern.status == True:
+                
                 potential_identifier = '-'.join(search_pattern.data.groups())
+                
+                project_position = args.object_mapping. \
+                                   get('Object', 'project')
+
+                logger.debug(search_pattern.data.groups() \
+                             [int(project_position)])
+
                 is_an_object_already_present = [x for x in all_objects \
                                                 if x.get_identifier() == \
                                                 potential_identifier]
+                                                        
                 if not is_an_object_already_present:
-                    logger.debug("this id is new!")
                     new_object = DigitalObject(potential_identifier)
                     all_objects.append(new_object)
+                                                    
             else:
                 page_search_pattern = item.find_matching_object_pattern( \
-                        re_compile(args.page_mapping.get('Object','pattern')) \
+                        re_compile(args.page_mapping.get('Object',
+                                                         'pattern')) \
                 )
-                print(page_search_pattern)
+                                            
                 if page_search_pattern.status == True:
-                    logger.debug("{path} is a page file". \
-                                  format(path = item.get_canonical_filepath()))
+                    pass
+                    # logger.debug("{path} is a page file". \
+                    #               format(path = item.get_canonical_filepath()))
                 else:
-
-                    logger.debug("{path} doesn't match any pattern". \
-                                  format(path = item.get_canonical_filepath()))
+                    pass
+                    # logger.debug("{path} doesn't match any pattern". \
+                    #               format(path = item.get_canonical_filepath()))
 
         return 0
     except KeyboardInterrupt:
