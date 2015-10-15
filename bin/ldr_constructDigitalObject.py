@@ -10,10 +10,12 @@ __description__ = "This is a program for creating digital objects to " + \
 
 
 from argparse import Action, ArgumentParser
+from configparser import ConfigParser
 from hashlib import md5
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
+from os.path import exists
 from re import compile as re_compile
 from sqlalchemy import Table
 
@@ -22,23 +24,27 @@ from uchicagoldr.item import Item
 from uchicagoldr.database import Database
 from uchicagoldr.digitalobject import DigitalObject
 
-class RequireObjectMapping(Action):
-    def __call__(self,parser,namespace,value,option_string=None):
-        if not getattr(namespace,'object_mapping',None):
-            raise ValueError("must include an object mapping for object pattern")
-        else:
-            setattr(namespace,self.dest,value)
-        
-class RequirePageMapping(Action):
-    def __call__(self,parser,namespace,value,option_string=None):
-        if not getattr(namespace,'page-mapping',None):
-            raise ValueError("must include a page mapping for object pattern")
-        else:
-            setattr(namespace,self.dest,value)
-
 class ReadMapping(Action):
-    def __call__(self,parser,namespace,value,option_string=None):        
-        setattr(namespace,self.dest,value)
+    def __call__(self,parser,namespace,value,option_string=None):
+        assert exists(value)
+        config = ConfigParser()
+        config.read(value)
+        try:
+            pattern = config.get('Object', 'pattern')
+        except KeyError:
+            raise ValueError("your map is missing a pattern")
+        try:
+            labels = config.get('Object', 'labels')
+        except KeyError:
+            raise ValueErorr("your map is missing a label")
+        labels = labels.split(',')
+        for label in labels:
+            try:
+                num = config.get('Object', label)
+            except KeyError:
+                raise ValueError("your map is missing a " + \
+                        "definition for {label}".format(label = label))
+        setattr(namespace,self.dest,config)
 
 def main():
     parser = ArgumentParser(description = "{description}". \
@@ -73,14 +79,6 @@ def main():
     parser.add_argument( \
                          '--root',help = "Enter the root of the repository",
                          action = 'store')
-    parser.add_argument( \
-                         '--object_pattern',help="Enter the regex pattern " + \
-                         "to match an object",
-                         action = RequireObjectMapping)
-    parser.add_argument( \
-                         '--page_pattern', help = "Enter the regex pattern " + \
-                         "to match a page",
-                         action = RequirePageMapping)
     parser.add_argument( \
                          '--object-mapping',help = "Enter a mapping for " + \
                          "object pattern groups", action = ReadMapping \
@@ -139,33 +137,30 @@ def main():
             item.set_canonical_filepath(canon)
 
             search_pattern = item.find_matching_object_pattern( \
-                    re_compile("(mvol)/(\w{4})/(\w{4})/(\w{4})/" +  
-                               "(mvol)-(\w{4})-(\w{4})-(\w{4})"))
+                    re_compile(args.object_mapping.get('Object', 'pattern')) \
+            )
 
             if search_pattern.status == True:
                 potential_identifier = '-'.join(search_pattern.data.groups())
                 is_an_object_already_present = [x for x in all_objects \
                                                 if x.get_identifier() == \
                                                 potential_identifier]
-                if is_an_object_already_present:
-                    logger.debug("found this id already")
-                else:
+                if not is_an_object_already_present:
                     logger.debug("this id is new!")
                     new_object = DigitalObject(potential_identifier)
                     all_objects.append(new_object)
-                logger.debug(potential_identifier)
             else:
                 page_search_pattern = item.find_matching_object_pattern( \
-                    re_compile("(mvol)/(\w{4})/(\w{4})/(\w{4})/.*/(mvol)-" + \
-                               "(\w{4})-(\w{4})-(\w{4})_*"))
-                
+                        re_compile(args.page_mapping.get('Object','pattern')) \
+                )
+                print(page_search_pattern)
                 if page_search_pattern.status == True:
-                    
                     logger.debug("{path} is a page file". \
-                                 format(path = item.get_canonical_filepath()))
+                                  format(path = item.get_canonical_filepath()))
                 else:
+
                     logger.debug("{path} doesn't match any pattern". \
-                                 format(path = item.get_canonical_filepath()))
+                                  format(path = item.get_canonical_filepath()))
 
         return 0
     except KeyboardInterrupt:
