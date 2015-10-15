@@ -25,7 +25,7 @@ class DigitalObject(object):
                                                      None \
             )
 
-    def get_identifier():
+    def get_identifier(self):
         return self.object_identifier
     
     def classify_file_type(self, control_type_data):

@@ -9,7 +9,7 @@ __description__ = "This is a program for creating digital objects to " + \
                   "conform with a defined specification"
 
 
-from argparse import ArgumentParser
+from argparse import Action, ArgumentParser
 from hashlib import md5
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
@@ -22,56 +22,83 @@ from uchicagoldr.item import Item
 from uchicagoldr.database import Database
 from uchicagoldr.digitalobject import DigitalObject
 
+class RequireObjectMapping(Action):
+    def __call__(self,parser,namespace,value,option_string=None):
+        if not getattr(namespace,'object_mapping',None):
+            raise ValueError("must include an object mapping for object pattern")
+        else:
+            setattr(namespace,self.dest,value)
+        
+class RequirePageMapping(Action):
+    def __call__(self,parser,namespace,value,option_string=None):
+        if not getattr(namespace,'page-mapping',None):
+            raise ValueError("must include a page mapping for object pattern")
+        else:
+            setattr(namespace,self.dest,value)
+
+class ReadMapping(Action):
+    def __call__(self,parser,namespace,value,option_string=None):        
+        setattr(namespace,self.dest,value)
+
 def main():
-    parser = ArgumentParser(description="{description}". \
+    parser = ArgumentParser(description = "{description}". \
                             format(description = __description__),
                             epilog="{copyright}; ". \
                             format(copyright = __copyright__) + \
                             "written by {author} <{email}>.". \
                             format(author = __author__,
                                    email = __email__)) 
-    parser.add_argument("-v", help="See the version of this program",
-                        action="version", version=__version__)
-    parser.add_argument( \
-                         '-b','-verbose',help="set verbose logging",
-                         action='store_const',dest='log_level',
-                         const=INFO \
+    parser.add_argument("-v", help = "See the version of this program",
+                        action = "version", version = __version__)
+    parser.add_argument(  
+                         '-b', '-verbose', help = "set verbose logging",
+                         action = 'store_const', dest = 'log_level',
+                         const = INFO \
     )
     parser.add_argument( \
-                         '-d','--debugging',help="set debugging logging",
-                         action='store_const',dest='log_level',
-                         const=DEBUG \
+                         '-d', '--debugging', help = "set debugging logging",
+                         action = 'store_const', dest = 'log_level',
+                         const = DEBUG \
     ) 
     parser.add_argument( \
-                         '-l','--log_loc',help="save logging to a file",
-                         action="store_const",dest="log_loc",
-                         const='./{progname}.log'. \
-                         format(progname=__file__) \
+                         '-l', '--log_loc', help = "save logging to a file",
+                         action = "store_const", dest = "log_loc",
+                         const = './{progname}.log'. \
+                         format(progname = __file__) \
     )
     parser.add_argument( \
-                         '--db_url',help="Enter a db url",action='store' \
+                         '--db_url', help = "Enter a db url",
+                         action = 'store' \
     )
     parser.add_argument( \
-                         '--root',help="Enter the root of the repository",
-                         action='store')
+                         '--root',help = "Enter the root of the repository",
+                         action = 'store')
     parser.add_argument( \
                          '--object_pattern',help="Enter the regex pattern " + \
                          "to match an object",
-                         action='store')
+                         action = RequireObjectMapping)
     parser.add_argument( \
-                         '--page_pattern',help="Enter the regex pattern " + \
+                         '--page_pattern', help = "Enter the regex pattern " + \
                          "to match a page",
-                         action='store')
+                         action = RequirePageMapping)
     parser.add_argument( \
-                         'accessions',nargs="*",action='store',
-                         help="Enter 1 or more accession " + \
+                         '--object-mapping',help = "Enter a mapping for " + \
+                         "object pattern groups", action = ReadMapping \
+    )
+    parser.add_argument( \
+                         '--page-mapping',help="Enter a mapping for " + \
+                         "page pattern groups", action = ReadMapping \
+    )
+    parser.add_argument( \
+                         'accessions', nargs = "*", action = 'store',
+                         help = "Enter 1 or more accession " + \
                          "identifiers to process" \
     )
     args = parser.parse_args()
     log_format = Formatter( \
                             "[%(levelname)s] %(asctime)s  " + \
                             "= %(message)s",
-                            datefmt="%Y-%m-%dT%H:%M:%S" \
+                            datefmt = "%Y-%m-%dT%H:%M:%S" \
     )
     global logger
     logger = getLogger( \
@@ -110,7 +137,7 @@ def main():
             item.set_accession(accession)            
             canon = item.find_canonical_filepath()            
             item.set_canonical_filepath(canon)
-            logger.debug(item)
+
             search_pattern = item.find_matching_object_pattern( \
                     re_compile("(mvol)/(\w{4})/(\w{4})/(\w{4})/" +  
                                "(mvol)-(\w{4})-(\w{4})-(\w{4})"))
@@ -127,6 +154,18 @@ def main():
                     new_object = DigitalObject(potential_identifier)
                     all_objects.append(new_object)
                 logger.debug(potential_identifier)
+            else:
+                page_search_pattern = item.find_matching_object_pattern( \
+                    re_compile("(mvol)/(\w{4})/(\w{4})/(\w{4})/.*/(mvol)-" + \
+                               "(\w{4})-(\w{4})-(\w{4})_*"))
+                
+                if page_search_pattern.status == True:
+                    
+                    logger.debug("{path} is a page file". \
+                                 format(path = item.get_canonical_filepath()))
+                else:
+                    logger.debug("{path} doesn't match any pattern". \
+                                 format(path = item.get_canonical_filepath()))
 
         return 0
     except KeyboardInterrupt:
