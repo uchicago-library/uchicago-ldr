@@ -13,6 +13,6 @@ bin/*~
 *~
 env/*
 .DS_Store
-conf/.#.*#
-conf/#.*#
+conf/.#*
+conf/#*
 conf/*~
