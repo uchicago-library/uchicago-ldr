@@ -28,7 +28,7 @@ class TextDocument(Item):
         return self.terms
 
     def find_unique_terms(self):
-        assert(self.terms is not [])
+        assert(len(self.get_terms())>0)
         uniqueTerms=set(self.terms)
         return uniqueTerms
 
@@ -39,9 +39,10 @@ class TextDocument(Item):
         return self.unique_terms
 
     def find_term_counts(self):
-        assert(self.terms is not [])
+        assert(len(self.get_terms())>0)
+        assert(len(self.get_unique_terms())>0)
         counts=[]
-        uniques=self.find_unique_terms()
+        uniques=self.get_unique_terms()
         for term in uniques:
             counts.append((term,self.terms.count(term)))
         return counts

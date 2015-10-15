@@ -17,7 +17,7 @@ class TextBatch(Batch):
         Batch.__init__(self,root,path)
 
     def validate_items(self):
-        assert(self.get_items() != [])
+        assert(len(self.get_items())>0)
         for item in self.get_items():
             try:
                 assert isinstance(item,TextDocument)
@@ -26,7 +26,7 @@ class TextBatch(Batch):
         return True
 
     def find_terms(self):
-        assert(self.get_items() != [])
+        assert(len(self.get_items())>0)
         itemTerms=[]
         for item in self.get_items():
             assert isinstance(item,TextDocument)
@@ -41,8 +41,8 @@ class TextBatch(Batch):
         return self.terms
 
     def find_doc_counts(self):
-        assert(self.unique_terms != [])
-        assert(self.get_items != [])
+        assert(len(self.unique_terms)>0)
+        assert(len(self.get_items())>0)
         counts=Counter()
         for term in self.unique_terms:
             for item in self.get_items():
@@ -58,7 +58,7 @@ class TextBatch(Batch):
         return self.doc_counts
 
     def find_unique_terms(self):
-        assert(self.terms != [])
+        assert(len(self.get_terms())>0)
         uniqueTerms=set(self.terms)
         return uniqueTerms
 
@@ -69,8 +69,8 @@ class TextBatch(Batch):
         return self.unique_terms
 
     def find_term_counts(self):
-        assert(self.terms != [])
-        assert(self.get_unique_terms() != {})
+        assert(len(self.get_terms())>0)
+        assert(len(self.get_unique_terms())>0)
         counts=[]
         uniques=self.get_unique_terms()
         for term in uniques:
@@ -84,10 +84,13 @@ class TextBatch(Batch):
         return self.term_counts
 
     def find_tf_idfs(self):
+        assert(len(self.get_items())>0)
+        assert(len(self.get_doc_counts())>0)
         tfidfs={}
         for item in self.get_items():
             termNums=[]
             item.set_terms(item.find_terms())
+            item.set_unique_terms(item.find_unique_terms())
             item.set_term_counts(item.find_term_counts())
             for termCount in item.get_term_counts():
                 termNums.append((termCount[0],termCount[1]/float(self.get_doc_counts()[termCount[0]])))
