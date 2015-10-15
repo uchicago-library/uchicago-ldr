@@ -103,7 +103,7 @@ def main():
     else:
         raise ValueError("need to include a root")
     try:
-
+        all_objects = []
         for item in batch.get_items():
             accession = item.find_file_accession()
             item.set_accession(accession)            
@@ -115,7 +115,17 @@ def main():
                                "(mvol)-(\w{4})-(\w{4})-(\w{4})"))
 
             if search_pattern.status == True:
-                logger.debug(search_pattern.data.groups())
+                potential_identifier = '-'.join(search_pattern.data.groups())
+                is_an_object_already_present = [x for x in all_objects \
+                                                if x.identifier == \
+                                                potential_identifier]
+                if is_an_object_already_present:
+                    logger.debug("found this id already")
+                else:
+                    logger.debug("this id is new!")
+                    new_object = DigitalObject(potential_identifier)
+                    all_objects.append(new_object)
+                logger.debug(potential_identifier)
 
         return 0
     except KeyboardInterrupt:
