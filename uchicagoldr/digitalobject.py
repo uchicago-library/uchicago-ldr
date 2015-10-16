@@ -6,14 +6,19 @@ from re import compile as re_compile, split as re_split
 class DigitalObject(object):
     object_identifier = ""
     object_files = []
-
+    page_files = []
+    
     def __init__(self, identifier):
         self.object_identifier = identifier
         self.object_files = []
-
-    def add_file(self, file_object):
+        self.page_files = []
+        
+    def add_object_file(self, file_object):
         self.object_files.append(file_object)
 
+    def add_page_file(self, file_object):
+        self.page_files.append(file_object)        
+        
     def find_object_identifier(self, control_type_data):
         object_pattern = control_type_data.get('object')
         assert object_pattern
