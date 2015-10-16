@@ -139,40 +139,70 @@ def main():
             search_pattern = item.find_matching_object_pattern( \
                     re_compile(args.object_mapping.get('Object', 'pattern')) \
             )
+            
+            page_search_pattern = item.find_matching_object_pattern( \
+                    re_compile(args.page_mapping.get('Object','pattern'))
+            )
+        
             if search_pattern.status == True:
-                potential_identifier = '-'.join(search_pattern.data.groups())
-                project_position = args.object_mapping. \
-                                   get('Object', 'project')
-                is_an_object_already_present = [x for x in all_objects \
-                                                if x.get_identifier() == \
-                                                potential_identifier]
-                if not is_an_object_already_present:
-                    the_object = DigitalObject(potential_identifier)
-                    all_objects.append(the_object)
-                else:
-                    the_object = is_an_object_already_present[0]
-                    
-                validate_filename_for_object = the_object. \
-                                    validate_filename(item.canonical_filepath,
-                                                      args.object_mapping,
-                                                search_pattern.data.groups())
-                if not validate_filename_for_object:
-                    logger.error("{path} has mismatched ".format(path = item.filepath) + \
-                                 "values in directory and filename")
-
+                logger.debug("it's an object file")
+                identifier_parts = args.object_mapping.get('Object',
+                                                           'identifier'). \
+                                                           split(',')
+                logger.debug(identifier_parts)
+                group = search_pattern.data.group()
+                logger.debug(group)
+                potential_identifier  = '-'.join(search_pattern.data.group())
+                
+            elif page_search_pattern.status == True:
+                logger.debug("it's a page file")
+                identifier_parts = args.page_mapping.get('Object',
+                                                         'identifier'). \
+                                                         split(',')
+                logger.debug(identifier_parts)
+                group = page_search_pattern.data.groups()
+                logger.debug(group)
+                potential_identifier = '-'.join(page_search_pattern.data.group())
             else:
-                page_search_pattern = item.find_matching_object_pattern( \
-                        re_compile(args.page_mapping.get('Object',
-                                                         'pattern')) \
-                )
-                if page_search_pattern.status == True:
-                    pass
-                    # logger.debug("{path} is a page file". \
-                    #               format(path = item.get_canonical_filepath()))
-                else:
-                    pass
-                    # logger.debug("{path} doesn't match any pattern". \
-                    #               format(path = item.get_canonical_filepath()))
+                logger.error("{path} is invalid".format(path = item.filepath))
+            # if search_pattern.status == True:
+                
+            #     potential_identifier = '-'.join(search_pattern.data.groups())
+            #     project_position = args.object_mapping. \
+            #                        get('Object', 'project')
+            #     is_an_object_already_present = [x for x in all_objects \
+            #                                     if x.get_identifier() == \
+            #                                     potential_identifier]
+            #     if not is_an_object_already_present:
+            #         the_object = DigitalObject(potential_identifier)
+            #         all_objects.append(the_object)
+            #     else:
+            #         the_object = is_an_object_already_present[0]
+                    
+            #     validate_filename_for_object = the_object. \
+            #                         validate_filename(item.canonical_filepath,
+            #                                           args.object_mapping,
+            #                                     search_pattern.data.groups())
+            #     if not validate_filename_for_object:
+            #         logger.error("{path} has mismatched ".format(path = item.filepath) + \
+            #                      "values in directory and filename")
+
+            # else:
+            #     page_search_pattern = item.find_matching_object_pattern( \
+            #             re_compile(args.page_mapping.get('Object',
+            #                                              'pattern')) \
+            #     )
+                
+            #     if page_search_pattern.status == True:
+            #         the_object.validate_filename(item.canonical_filepath,
+            #                                      page_search_pattern.groups())
+                    
+            #         # logger.debug("{path} is a page file". \
+            #         #               format(path = item.get_canonical_filepath()))
+            #     else:
+            #         pass
+            #         # logger.debug("{path} doesn't match any pattern". \
+            #         #               format(path = item.get_canonical_filepath()))
 
         return 0
     except KeyboardInterrupt:

@@ -66,7 +66,6 @@ class DigitalObject(object):
                                 search(self.filepath)
         pagenumber = None
         if page_pattern_search:
-            
             groups = page_pattern_search.groups()
             pagenumber = groups[-2]
             pagenumber = pagenumber.lstrip('0')
