@@ -47,32 +47,63 @@ class ReadMapping(Action):
                         "definition for {label}".format(label = label))
         setattr(namespace,self.dest,config)
 
-def validate_filename(filepath, object_map, identifier_groups):
-    assert isinstance(filepath, str)
-    assert isinstance(object_map, ConfigParser)
-    assert isinstance(identifier_groups, tuple)
-    header = re_compile('^\d{4}-\d{3}/')
-    check_for_scrc_header = header.search(filepath)
-    if header.search(filepath):
-        header, adjusted_filepath = re_split(header,filepath)
-        filepath_items = re_split('/|-|_',
-                                  adjusted_filepath \
-                                  [:adjusted_filepath.find('.')])
-    else:
-        filepath_items = re_splite('/|_|-',filepath)
-    for label in object_map.get('Object', 'labels').split(','):
-        label_positions = object_map.get('Object', label)
-        if label_positions.find(',') != -1:
-            label_positions = [int(x) \
-                               for x in label_positions.split(',')]
+def add_to_digitalobject(item, pattern_groups, mapping_info):
+    def validate_filename(filepath):
+        assert isinstance(filepath, str)
+        header = re_compile('^\d{4}-\d{3}/')
+        check_for_scrc_header = header.search(filepath)
+        if header.search(filepath):
+            header, adjusted_filepath = re_split(header,filepath)
+            filepath_items = re_split('/|-|_',
+                                      adjusted_filepath \
+                                      [:adjusted_filepath.find('.')])
         else:
-            label_positions = [int(label_positions)]
-        if False in [filepath_items[x] == \
-                     filepath_items[y] \
-                     for x,y in combinations(label_positions,2)]:
-            return False
-    return True        
-        
+            filepath_items = re_splite('/|_|-',filepath)
+        for label in mapping_info.get('Object', 'labels').split(','):
+            label_positions = mapping_info.get('Object', label)
+            if label_positions.find(',') != -1:
+                label_positions = [int(x) \
+                                   for x in label_positions.split(',')]
+            else:
+                label_positions = [int(label_positions)]
+            if False in [filepath_items[x] == \
+                         filepath_items[y] \
+                         for x,y in combinations(label_positions,2)]:
+                return False
+    return True
+
+    assert isinstance(mapping_info, ConfigParser)
+    assert isinstance(item, Item)
+    assert isinstance(pattern_groups, tuple)
+    group = pattern_groups            
+    is_it_valid = validate_filename(item.canonical_filepath,
+                                    object_mapping,
+                                    group)
+    if is_it_valid:
+        identifier_parts = args.object_mapping.get('Object',
+                                                   'identifier'). \
+                                                   split(',')
+        identifier = []
+        for l in identifier_parts:
+            positions = args.object_mapping.get('Object', l)
+            if positions.find(',') != -1:
+                position = int(positions.split(',')[0])
+            else:
+                position = int(positions)
+            identifier.append(group[position])
+            potential_identifier = '-'.join(identifier)
+            is_an_object_already_present = [x for x in all_objects \
+                                            if x.get_identifier() == \
+                                            potential_identifier]
+            if is_an_object_already_present:
+                the_object = is_an_object_already_present[0]
+            else:
+                the_object = DigitalObject(identifier)
+        the_object.add_object_file(the_object)
+    else:
+        return False    
+    return True
+
 def main():
     parser = ArgumentParser(description = "{description}". \
                             format(description = __description__),
@@ -162,67 +193,22 @@ def main():
             item.set_accession(accession)            
             canon = item.find_canonical_filepath()            
             item.set_canonical_filepath(canon)
-
             search_pattern = item.find_matching_object_pattern( \
                     re_compile(args.object_mapping.get('Object', 'pattern')) \
             )
-            
             page_search_pattern = item.find_matching_object_pattern( \
-                    re_compile(args.page_mapping.get('Object','pattern'))
+                    re_compile(args.page_mapping.get('Object', 'pattern')) \
             )
             if search_pattern.status == True:
-                group = search_pattern.data.groups()                
-                is_it_valid = validate_filename(item.canonical_filepath,
-                                                args.object_mapping,
-                                                group)
-                if is_it_valid:
-                    identifier_parts = args.object_mapping.get('Object',
-                                                               'identifier'). \
-                                                               split(',')
-                    identifier = []
-                    for l in identifier_parts:
-                        positions = args.object_mapping.get('Object', l)
-                        if positions.find(',') != -1:
-                            position = int(positions.split(',')[0])
-                        else:
-                            position = int(positions)
-                        identifier.append(group[position])
-                    potential_identifier = '-'.join(identifier)
-                    is_an_object_already_present = [x for x in all_objects \
-                                                     if x.get_identifier() == \
-                                                     potential_identifier]
-                    if is_an_object_already_present:
-                        the_object = is_an_object_already_present[0]
-                    else:
-                        the_object = DigitalObject(identifier)
-                    the_object.add_object_file(the_object)
+                did_it_add = add_to_digitalobject(item,
+                                                  search_pattern.data.groups(),
+                                                  args.object_mapping)
 
             elif page_search_pattern.status == True:
-                group = page_search_pattern.data.groups()                
-                is_it_valid = validate_filename(item.canonical_filepath,
-                                                args.page_mapping,
-                                                group)
-                if is_it_valid:
-                    identifier_parts = args.page_mapping.get('Object',
-                                                             'identifier'). \
-                                                             split(',')
-                    identifier = []
-                    for l in identifier_parts:
-                        positions = args.object_mapping.get('Object', l)
-                        if positions.find(',') != -1:
-                            position = int(positions.split(',')[0])
-                        else:
-                            position = int(options)
-                        identifier.append(group[position])
-                    potential_identifier = '-'.join(identifier)
-                    is_an_object_already_present = [x for x in all_objects \
-                                                     if x.get_identifier() == \
-                                                     potential_identifier]
-                    if is_an_object_already_present:
-                        the_object = is_an_object_already_present[0]
-                    else:
-                        the_object = DigitalObject(identifier)
-                    the_object.add_page_file(the_object)
+                did_it_add = add_to_digitalobject(item,
+                                                  page_search_pattern.data. \
+                                                  groups(),
+                                     args.page_mapping)
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))

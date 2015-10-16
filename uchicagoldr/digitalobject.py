@@ -1,6 +1,3 @@
-
-from configparser import ConfigParser
-from itertools import combinations
 from re import compile as re_compile, split as re_split
 
 class DigitalObject(object):
