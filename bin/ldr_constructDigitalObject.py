@@ -140,29 +140,31 @@ def main():
                     re_compile(args.object_mapping.get('Object', 'pattern')) \
             )
             if search_pattern.status == True:
-                
                 potential_identifier = '-'.join(search_pattern.data.groups())
-                
                 project_position = args.object_mapping. \
                                    get('Object', 'project')
-
-                logger.debug(search_pattern.data.groups() \
-                             [int(project_position)])
-
                 is_an_object_already_present = [x for x in all_objects \
                                                 if x.get_identifier() == \
                                                 potential_identifier]
-                                                        
                 if not is_an_object_already_present:
-                    new_object = DigitalObject(potential_identifier)
-                    all_objects.append(new_object)
-                                                    
+                    the_object = DigitalObject(potential_identifier)
+                    all_objects.append(the_object)
+                else:
+                    the_object = is_an_object_already_present[0]
+                    
+                validate_filename_for_object = the_object. \
+                                    validate_filename(item.canonical_filepath,
+                                                      args.object_mapping,
+                                                search_pattern.data.groups())
+                if not validate_filename_for_object:
+                    logger.error("{path} has mismatched ".format(path = item.filepath) + \
+                                 "values in directory and filename")
+
             else:
                 page_search_pattern = item.find_matching_object_pattern( \
                         re_compile(args.page_mapping.get('Object',
                                                          'pattern')) \
                 )
-                                            
                 if page_search_pattern.status == True:
                     pass
                     # logger.debug("{path} is a page file". \
