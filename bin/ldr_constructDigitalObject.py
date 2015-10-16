@@ -12,11 +12,12 @@ __description__ = "This is a program for creating digital objects to " + \
 from argparse import Action, ArgumentParser
 from configparser import ConfigParser
 from hashlib import md5
+from itertools import combinations
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
 from os.path import exists
-from re import compile as re_compile
+from re import compile as re_compile, split as re_split
 from sqlalchemy import Table
 
 from uchicagoldr.batch import Batch
@@ -46,6 +47,32 @@ class ReadMapping(Action):
                         "definition for {label}".format(label = label))
         setattr(namespace,self.dest,config)
 
+def validate_filename(filepath, object_map, identifier_groups):
+    assert isinstance(filepath, str)
+    assert isinstance(object_map, ConfigParser)
+    assert isinstance(identifier_groups, tuple)
+    header = re_compile('^\d{4}-\d{3}/')
+    check_for_scrc_header = header.search(filepath)
+    if header.search(filepath):
+        header, adjusted_filepath = re_split(header,filepath)
+        filepath_items = re_split('/|-|_',
+                                  adjusted_filepath \
+                                  [:adjusted_filepath.find('.')])
+    else:
+        filepath_items = re_splite('/|_|-',filepath)
+    for label in object_map.get('Object', 'labels').split(','):
+        label_positions = object_map.get('Object', label)
+        if label_positions.find(',') != -1:
+            label_positions = [int(x) \
+                               for x in label_positions.split(',')]
+        else:
+            label_positions = [int(label_positions)]
+        if False in [filepath_items[x] == \
+                     filepath_items[y] \
+                     for x,y in combinations(label_positions,2)]:
+            return False
+    return True        
+        
 def main():
     parser = ArgumentParser(description = "{description}". \
                             format(description = __description__),
@@ -143,28 +170,34 @@ def main():
             page_search_pattern = item.find_matching_object_pattern( \
                     re_compile(args.page_mapping.get('Object','pattern'))
             )
-        
             if search_pattern.status == True:
-                logger.debug("it's an object file")
                 identifier_parts = args.object_mapping.get('Object',
                                                            'identifier'). \
                                                            split(',')
-                logger.debug(identifier_parts)
-                group = search_pattern.data.group()
-                logger.debug(group)
+                group = search_pattern.data.groups()
+                is_it_valid = validate_filename(item.canonical_filepath,
+                                                args.object_mapping,
+                                                group)
+                logger.debug("it's an object file")
+                logger.debug(is_it_valid)
+
                 potential_identifier  = '-'.join(search_pattern.data.group())
-                
             elif page_search_pattern.status == True:
-                logger.debug("it's a page file")
                 identifier_parts = args.page_mapping.get('Object',
                                                          'identifier'). \
                                                          split(',')
-                logger.debug(identifier_parts)
                 group = page_search_pattern.data.groups()
-                logger.debug(group)
-                potential_identifier = '-'.join(page_search_pattern.data.group())
+                is_it_valid = validate_filename(item.canonical_filepath,
+                                                args.page_mapping,
+                                                group)
+                logger.debug("it's a page file")
+                logger.debug(is_it_valid)
+                potential_identifier = '-'.join(page_search_pattern.data. \
+                                                group())
             else:
-                logger.error("{path} is invalid".format(path = item.filepath))
+                logger.error("{path} is invalid". \
+                             format(path = item.filepath))
+                
             # if search_pattern.status == True:
                 
             #     potential_identifier = '-'.join(search_pattern.data.groups())

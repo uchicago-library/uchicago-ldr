@@ -28,32 +28,6 @@ class DigitalObject(object):
                                                      False,
                                                      None \
             )
-
-    def validate_filename(self, filepath, object_map, identifier_groups):
-        assert isinstance(filepath, str)
-        assert isinstance(object_map, ConfigParser)
-        assert isinstance(identifier_groups, tuple)
-        header = re_compile('^\d{4}-\d{3}/')
-        check_for_scrc_header = header.search(filepath)
-        if header.search(filepath):
-            header, adjusted_filepath = re_split(header,filepath)
-            filepath_items = re_split('/|-|_',
-                                      adjusted_filepath \
-                                      [:adjusted_filepath.find('.')])
-        else:
-            filepath_items = re_splite('/|_|-',filepath)
-        for label in object_map.get('Object', 'labels').split(','):
-            label_positions = object_map.get('Object', label)
-            if label_positions.find(',') != -1:
-                label_positions = [int(x) \
-                                   for x in label_positions.split(',')]
-            else:
-                label_positions = [int(label_positions)]
-            if False in [filepath_items[x] == \
-                         filepath_items[y] \
-                         for x,y in combinations(label_positions,2)]:
-                return False
-        return True
         
     def get_identifier(self):
         return self.object_identifier
