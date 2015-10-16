@@ -47,7 +47,7 @@ class ReadMapping(Action):
                         "definition for {label}".format(label = label))
         setattr(namespace,self.dest,config)
 
-def add_to_digitalobject(item, pattern_groups, mapping_info):
+def add_to_digitalobject(item, pattern_groups, mapping_info, objects = []):
     def validate_filename(filepath):
         assert isinstance(filepath, str)
         header = re_compile('^\d{4}-\d{3}/')
@@ -92,11 +92,12 @@ def add_to_digitalobject(item, pattern_groups, mapping_info):
                 position = int(positions)
             identifier.append(group[position])
             potential_identifier = '-'.join(identifier)
-            is_an_object_already_present = [x for x in all_objects \
+            is_an_object_already_present = [x for x in objects \
                                             if x.get_identifier() == \
                                             potential_identifier]
             if is_an_object_already_present:
                 the_object = is_an_object_already_present[0]
+                objects.append(the_object)
             else:
                 the_object = DigitalObject(identifier)
         the_object.add_object_file(the_object)
@@ -202,16 +203,24 @@ def main():
             if search_pattern.status == True:
                 did_it_add = add_to_digitalobject(item,
                                                   search_pattern.data.groups(),
-                                                  args.object_mapping)
+                                                  args.object_mapping,
+                                                  objects = all_objects)
 
             elif page_search_pattern.status == True:
                 did_it_add = add_to_digitalobject(item,
                                                   page_search_pattern.data. \
                                                   groups(),
-                                     args.page_mapping)
+                                                  args.page_mapping,
+                                                  objects = all_objects)
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
+            if not did_it_add:
+                logger.error("{path} could not be made part ".format(path = \
+                                                            item.filepath) + \
+                        "of a digital object according to mapping provided")
+        for n in all_objects:
+            print(n)
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
