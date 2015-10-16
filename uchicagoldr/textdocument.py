@@ -17,7 +17,7 @@ class TextDocument(Item):
         with open(self.filepath,'r',errors='replace') as f:
             fileString=f.read()
         fileString=fileString.lower()
-        regexPattern = '|'.join(map(escape, [" ","\n",".",",",";","'","-","\t","?","!",'(',')','[',']''\\',":","\"","\'"]))
+        regexPattern = '|'.join(map(escape, [" ","\n",".",",",";","'","-","\t","?","!",'(',')','[',']''\\',":","\"","\'",'“','—',"‘"]))
         splitString=split(regexPattern,fileString)
         return splitString
 

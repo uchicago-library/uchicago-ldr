@@ -98,7 +98,8 @@ def main():
             numToPrint=5
             for entry in textDocs.get_tf_idfs():
                 firstX=sorted(textDocs.get_tf_idfs()[entry],key=lambda tup: tup[1],reverse=True)[0:numToPrint]
-                print(entry+str(firstX))
+                print(entry+"\n"+", ".join([x[0] for x in firstX]))
+                print()
             
         return 0
     except KeyboardInterrupt:

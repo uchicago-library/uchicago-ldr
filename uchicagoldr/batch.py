@@ -30,6 +30,10 @@ class Batch(object):
         self.root = root
         self.items = []
 
+    def __iter__(self):
+        for item in self.get_items():
+            yield item
+
     def add_item(self,new_item):
         try:
             assert isinstance(new_item,Item)
