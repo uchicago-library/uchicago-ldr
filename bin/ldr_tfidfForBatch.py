@@ -14,6 +14,7 @@ from argparse import ArgumentParser
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
+from operator import itemgetter
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -95,11 +96,20 @@ def main():
             textDocs.set_doc_counts(textDocs.find_doc_counts())
             logger.info("Finding TFIDFs")
             textDocs.set_tf_idfs(textDocs.find_tf_idfs())
-            numToPrint=5
-            for entry in textDocs.get_tf_idfs():
-                firstX=sorted(textDocs.get_tf_idfs()[entry],key=lambda tup: tup[1],reverse=True)[0:numToPrint]
-                print(entry+"\n"+", ".join([x[0] for x in firstX]))
-                print()
+            for key in textDocs.get_tf_idfs():
+                print(key)
+                tfidfs=[]
+                for entry in textDocs.get_tf_idfs()[key]:
+                    tfidfs.append((entry,textDocs.get_tf_idfs()[key][entry]))
+                tfidfs=sorted(tfidfs,key=lambda x: x[1],reverse=True)
+                printFirstX=5
+                firstX=tfidfs[0:printFirstX]
+                justTerms=[]
+                for entry in firstX:
+                    justTerms.append(entry[0]) 
+                print(",".join(justTerms)+"\n")
+                    
+
             
         return 0
     except KeyboardInterrupt:

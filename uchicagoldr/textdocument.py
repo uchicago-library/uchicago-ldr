@@ -1,4 +1,5 @@
 from re import escape,split
+from collections import Counter
 
 from uchicagoldr.item import Item
 
@@ -8,7 +9,7 @@ class TextDocument(Item):
     """
     unique_terms=[]
     terms=[]
-    term_counts=[]
+    term_counts=Counter()
     
     def __init__(self,path,root):
         Item.__init__(self,path,root)
@@ -41,10 +42,10 @@ class TextDocument(Item):
     def find_term_counts(self):
         assert(len(self.get_terms())>0)
         assert(len(self.get_unique_terms())>0)
-        counts=[]
+        counts=Counter()
         uniques=self.get_unique_terms()
         for term in uniques:
-            counts.append((term,self.terms.count(term)))
+            counts[term]=self.terms.count(term)
         return counts
 
     def set_term_counts(self,newCounts):

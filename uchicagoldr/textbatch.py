@@ -72,10 +72,10 @@ class TextBatch(Batch):
     def find_term_counts(self):
         assert(len(self.get_terms())>0)
         assert(len(self.get_unique_terms())>0)
-        counts=[]
+        counts=Counter()
         uniques=self.get_unique_terms()
         for term in uniques:
-            counts.append((term,self.terms.count(term)))
+            counts[term]=self.terms.count(term)
         return counts
 
     def set_term_counts(self,newCounts):
@@ -87,24 +87,25 @@ class TextBatch(Batch):
     def find_tf_idfs(self):
         assert(len(self.get_items())>0)
         assert(len(self.get_doc_counts())>0)
-        tfidfs={}
+        k=.5
+        itemTFIDFS={}
+        termIDFS={}
+        for term in self.get_unique_terms():
+            IDF=log(1+(len(self.get_items())/self.get_doc_counts()[term]))
+            termIDFS[term]=IDF
         for item in self.get_items():
-            termNums=[]
             item.set_terms(item.find_terms())
             item.set_unique_terms(item.find_unique_terms())
             item.set_term_counts(item.find_term_counts())
-            maxTermCount=sorted(item.get_term_counts(),key=lambda tup: tup[1],reverse=True)[0][1]
-            for termCount in item.get_term_counts():
-                if termCount[0] in self.get_terms():
-                    k=.5
-                    tf=k+(1-k)*(.5*(termCount[1]/maxTermCount))
-                    #Inverse Frequency add 1 to allow TF to dominate given a term in every document rather than bottoming the value out to 0 
-                    idf=log(1+(len(self.get_items())/self.get_doc_counts()[termCount[0]]))
-                    #Raw Counts
-                    #termNums.append((termCount[0],termCount[1]/float(self.get_doc_counts()[termCount[0]])))
-                    termNums.append((termCount[0],tf*idf))
-            tfidfs[item.get_file_path()]=termNums
-        return tfidfs
+            maxTerm=item.get_term_counts().most_common()[0][1]
+            tfidfs={}
+            for term in item.get_unique_terms():
+                if term in self.get_unique_terms():
+                    tf =k+(1-k)*(item.get_term_counts()[term]/maxTerm)
+                    idf=termIDFS[term]
+                    tfidfs[term]=tf*idf
+            itemTFIDFS[item.get_file_path()]=tfidfs
+        return itemTFIDFS
 
     def get_tf_idfs(self):
         return self.tf_idfs
