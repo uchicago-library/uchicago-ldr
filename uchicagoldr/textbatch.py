@@ -45,11 +45,11 @@ class TextBatch(Batch):
         assert(len(self.unique_terms)>0)
         assert(len(self.get_items())>0)
         counts=Counter()
-        for term in self.unique_terms:
-            for item in self.get_items():
-                assert(item.get_terms != [])
-                if term in item.get_terms():
-                    counts[term]+=1
+        for item in self.get_items():
+            item.set_terms(item.find_terms())
+            item.set_unique_terms(item.find_unique_terms())
+            for term in item.get_unique_terms():
+                counts[term]+=1
         return counts
 
     def set_doc_counts(self,newCounts):

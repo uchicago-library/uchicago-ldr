@@ -102,7 +102,7 @@ def main():
                 for entry in textDocs.get_tf_idfs()[key]:
                     tfidfs.append((entry,textDocs.get_tf_idfs()[key][entry]))
                 tfidfs=sorted(tfidfs,key=lambda x: x[1],reverse=True)
-                printFirstX=5
+                printFirstX=9
                 firstX=tfidfs[0:printFirstX]
                 justTerms=[]
                 for entry in firstX:
