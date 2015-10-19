@@ -47,63 +47,129 @@ class ReadMapping(Action):
                         "definition for {label}".format(label = label))
         setattr(namespace,self.dest,config)
 
-def add_to_digitalobject(item, pattern_groups, mapping_info, objects = []):
-    def validate_filename(filepath):
-        assert isinstance(filepath, str)
-        header = re_compile('^\d{4}-\d{3}/')
-        check_for_scrc_header = header.search(filepath)
-        if header.search(filepath):
-            header, adjusted_filepath = re_split(header,filepath)
-            filepath_items = re_split('/|-|_',
-                                      adjusted_filepath \
-                                      [:adjusted_filepath.find('.')])
-        else:
-            filepath_items = re_splite('/|_|-',filepath)
-        for label in mapping_info.get('Object', 'labels').split(','):
-            label_positions = mapping_info.get('Object', label)
-            if label_positions.find(',') != -1:
-                label_positions = [int(x) \
-                                   for x in label_positions.split(',')]
-            else:
-                label_positions = [int(label_positions)]
-            if False in [filepath_items[x] == \
-                         filepath_items[y] \
-                         for x,y in combinations(label_positions,2)]:
-                return False
-    return True
+def add_to_digitalobject(item, pattern_groups, mapping_info, objects=[]):
 
     assert isinstance(mapping_info, ConfigParser)
     assert isinstance(item, Item)
     assert isinstance(pattern_groups, tuple)
-    group = pattern_groups            
-    is_it_valid = validate_filename(item.canonical_filepath,
-                                    object_mapping,
-                                    group)
+    group = pattern_groups
+    is_it_valid = validate_filename(item.canonical_filepath)
     if is_it_valid:
-        identifier_parts = args.object_mapping.get('Object',
-                                                   'identifier'). \
-                                                   split(',')
+        identifier_parts = mapping_info.get('Object',
+                                            'identifier'). \
+                                            split(',')
         identifier = []
         for l in identifier_parts:
-            positions = args.object_mapping.get('Object', l)
+            positions = mapping_info.get('Object', l)
             if positions.find(',') != -1:
                 position = int(positions.split(',')[0])
             else:
                 position = int(positions)
             identifier.append(group[position])
-            potential_identifier = '-'.join(identifier)
-            is_an_object_already_present = [x for x in objects \
-                                            if x.get_identifier() == \
-                                            potential_identifier]
-            if is_an_object_already_present:
-                the_object = is_an_object_already_present[0]
-                objects.append(the_object)
-            else:
-                the_object = DigitalObject(identifier)
+        potential_identifier = '-'.join(identifier)
+
+        is_an_object_already_present = [x for x in objects \
+                                        if x.get_identifier() == \
+                                        potential_identifier]
+        print(objects)
+        if is_an_object_already_present:
+            the_object = is_an_object_already_present[0]
+            objects.append(the_object)
+        else:
+            the_object = DigitalObject(identifier)
         the_object.add_object_file(the_object)
+
     else:
-        return False    
-    return True
+        return False
+    return objects
+
+# def validate_filename(filepath):
+#     assert isinstance(filepath, str)
+#     header = re_compile('^\d{4}-\d{3}/')
+#     check_for_scrc_header = header.search(filepath)
+    
+#     if header.search(filepath):
+#         header, adjusted_filepath = re_split(header,filepath)
+#         filepath_items = re_split('/|-|_',
+#                                   adjusted_filepath \
+#                                   [:adjusted_filepath.find('.')])
+#     else:
+#         filepath_items = re_splite('/|_|-',filepath)
+#     for label in mapping_info.get('Object', 'labels').split(','):
+#         label_positions = mapping_info.get('Object', label)
+#         if label_positions.find(',') != -1:
+#             label_positions = [int(x) \
+#                                for x in label_positions.split(',')]
+#         else:
+            
+#             label_positions = [int(label_positions)]
+            
+#         if False in [filepath_items[x] == \
+#                      filepath_items[y] \
+#                      for x,y in combinations(label_positions,2)]:
+#             return False
+#     return True
+
+def validate_filename_id_placement(filename_parts, id_parts):
+    for id_nums in id_parts:
+        if id_nums.find(',') != -1:
+            n_items = [int(x) for x in id_nums.split(',')]
+            print(n_items)
+            for t in n_items:
+                print(filename_parts[t])
+        else:
+            print(filename_parst[int(id_nums)])
+            
+    # for x in id_parts:
+    #     l = x.split(',')
+    #     prev = None
+    #     for i in l:
+    #         if prev:
+    #             if current == prev:
+    #                 pass
+    #             else:
+    #                 return False
+    #     return True
+    #     # for n in x.split(','):
+    #     #     current = filename_parts[int(n)]
+    #     #     if prev == "":
+    #     #         next
+    #     #     elif current != prev:
+    #     #         return False
+    # return True
+        
+
+def validate_filename(filepath):
+     test = find_pattern_in_a_string('^\d{4}-\d{3}', filepath)
+     if test:
+         return re_split('^\d{4}-\d{3}', filepath)[1]
+     else:
+         return None
+
+def split_filepath_into_list_of_words(filepath):
+    c = re_split('/|-|_', filepath)
+    if c[0] == '':
+        return c[1:]
+    else:
+        return c
+
+def find_pattern_in_a_string(pattern, a_string):
+    pattern = re_compile(pattern)
+    if not pattern.search(a_string):
+        return None
+    return pattern
+    
+
+def get_truthiness_of_list(a_list):
+    o = True
+    for n in a_list:
+       o = o&n
+       if not o:
+           break
+    return 0
+
+def find_identifier_in_list(potential_identifier, a_list):
+    return [x for x in a_list if x.get_identifier() == potential_identifier]
 
 def main():
     parser = ArgumentParser(description = "{description}". \
@@ -200,27 +266,48 @@ def main():
             page_search_pattern = item.find_matching_object_pattern( \
                     re_compile(args.page_mapping.get('Object', 'pattern')) \
             )
-            if search_pattern.status == True:
-                did_it_add = add_to_digitalobject(item,
-                                                  search_pattern.data.groups(),
-                                                  args.object_mapping,
-                                                  objects = all_objects)
+            new_filepath = validate_filename(item.canonical_filepath)
+            
+            if new_filepath:
+                
+                t = split_filepath_into_list_of_words(new_filepath)[:-1]
 
-            elif page_search_pattern.status == True:
-                did_it_add = add_to_digitalobject(item,
-                                                  page_search_pattern.data. \
-                                                  groups(),
-                                                  args.page_mapping,
-                                                  objects = all_objects)
+                if search_pattern.status == True:
+                    groups = search_pattern.data.groups()
+                    c = validate_filename_id_placement(t,
+                            [args.object_mapping.get('Object', l)
+                             for l in args.object_mapping.get('Object',
+                                                'identifier').split(',')])
+            
+                
+                # did_it_add = add_to_digitalobject(item,
+                #                                   search_pattern.data.groups(),
+                #                                   args.object_mapping,
+                #                                   objects = all_objects)
+
+                elif page_search_pattern.status == True:
+                    groups = page_search_pattern.data.groups()
+                    c = validate_filename_id_placement(t,
+                            [args.object_mapping.get('Object', l)
+                             for l in args.object_mapping.get('Object',
+                                                'identifier').split(',')])
+                    logger.debug(c)
+                # did_it_add = add_to_digitalobject(item,
+                #                                   page_search_pattern.data. \
+                #                                   groups(),
+                #                                   args.page_mapping,
+                #                                   objects = all_objects)
+
+
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
-            if not did_it_add:
-                logger.error("{path} could not be made part ".format(path = \
-                                                            item.filepath) + \
-                        "of a digital object according to mapping provided")
-        for n in all_objects:
-            print(n)
+                
+            # if not did_it_add:
+            #     logger.error("{path} could not be made part ".format(path = \
+            #                                                 item.filepath) + \
+            #             "of a digital object according to mapping provided")
+        print(all_objects)
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
