@@ -31,6 +31,7 @@ class TextBatch(Batch):
         itemTerms=[]
         for item in self.get_items():
             assert isinstance(item,TextDocument)
+            item.set_raw_string(item.find_raw_string())
             item.set_terms(item.find_terms())
             itemTerms+=item.get_terms()
         return itemTerms
@@ -95,6 +96,7 @@ class TextBatch(Batch):
             IDF=log(1+(len(self.get_items())/self.get_doc_counts()[term]))
             termIDFS[term]=IDF
         for item in self.get_items():
+            item.set_raw_string(item.find_raw_string())
             item.set_terms(item.find_terms())
             item.set_unique_terms(item.find_unique_terms())
             item.set_term_counts(item.find_term_counts())
