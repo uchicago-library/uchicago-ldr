@@ -4,6 +4,7 @@ def pruneTerms(terms):
     days=['mon','tue','wed','thu','fri','sat','sun']
     months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
     stopList=stopList+days+months
+    termsSeen=[]
     for term in terms:
         if term in stopList:
             continue
@@ -17,6 +18,9 @@ def pruneTerms(terms):
             continue
         if len(term) == 1:
             continue
-        else:
+        if term in termsSeen:
             newTerms.append(term)
+            continue
+        else:
+            termsSeen.append(term)
     return newTerms

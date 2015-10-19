@@ -87,6 +87,7 @@ class TextBatch(Batch):
     def find_tf_idfs(self):
         assert(len(self.get_items())>0)
         assert(len(self.get_doc_counts())>0)
+        assert(len(self.get_unique_terms())>0)
         k=.5
         itemTFIDFS={}
         termIDFS={}
