@@ -6,7 +6,7 @@ class DigitalObject(object):
     page_files = []
     
     def __init__(self, identifier):
-        self.object_identifier = identifier
+        self.identifier = identifier
         self.object_files = []
         self.page_files = []
         
@@ -32,7 +32,7 @@ class DigitalObject(object):
             )
         
     def get_identifier(self):
-        return self.object_identifier
+        return self.identifier
     
     def classify_file_type(self, control_type_data):
         page_pattern = control_type_data.get('page_file')
