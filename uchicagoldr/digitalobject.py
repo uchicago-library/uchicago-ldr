@@ -2,12 +2,28 @@ from re import compile as re_compile, split as re_split
 
 from uchicagoldr.item import Item
 from configparser import ConfigParser
+from re import compile as re_compile
 
 class Page_Part(Item):
-    
     def __init__(self, item, config_data):
+        file_type = config_data.get('Object', 'file_type')
+        pattern = config_data.get('Object', 'pattern')
+        if item.has_header():
+            filepath = item.canonical_filepath.split(item.get_header())[1]
+        else:
+            filepath = item.canonical_filepath
+        print(re_compile(pattern).search(filepath).groups())
         self.item = item
 
+class Object_Part(Item):
+    def __init__(self, item, config_data):
+        pattern = config_data.get('Object', 'pattern')
+        if item.has_header():
+            filepath = item.canonical_filepath.split(item.get_header())[1]
+        else:
+            filepath = item.canonical_filepath
+        
+        print(re_compile(pattern).search(item.canonical_filepath).groups())
         
 class Page(object):
     page_parts = []
@@ -32,25 +48,48 @@ class Page(object):
         assert isinstance(config_data, ConfigParser)
         new_part = Page_Part(item)
         self.page_parts.append(new_part, config_data)
-
-    
-        
         
 class DigitalObject(object):
     object_identifier = ""
-    object_files = []
-    page_files = []
+    representations = []
+    pages = []
     
     def __init__(self, identifier):
         self.identifier = identifier
         self.object_files = []
         self.page_files = []
         
-    def add_object_file(self, file_object):
+    def add_object_part(self, file_object, config_data):
+        assert isinstance(file_object, Item)
+        Object_Part(file_object, config_data)
         self.object_files.append(file_object)
 
-    def add_page_file(self, file_object):
-        self.page_files.append(file_object)        
+    def add_page(self, file_object, config_data):
+        assert isinstance(file_object, Item)
+        assert isinstance(config_data, ConfigParser)
+        pattern = config_data.get('Object', 'pattern')
+        if file_object.has_header():
+            filepath = file_object.canonical_filepath. \
+                       split(item.get_header())[1]
+        else:
+            filepath = file_object.canonical_filepath
+            
+        file_matching_parts = re_compile(pattern).search(filepath).groups()
+        
+        page_part_label = config_data.get('Object', 'page_part_label')
+        
+        file_part_labels = config_data.get('Object', 'labels').split(',')
+        file_part_label_check = file_part_labels.index(page_part_label)
+        if file_part_label_check != -1:
+            page_part_index = config_data.get('Object', page_part_label)
+            page_type = file_matching_parts \
+                        [int(config_data.get('Object', page_part_label))]
+            if not page_type in config_data.get('Object', 'parts'):
+                return False
+            page_number = file_matching_parts[int(config_data.get('Object', config_data.get('Object', 'number_label')))].lstrip('0')
+            
+        else:
+            return False
         
     def find_object_identifier(self, control_type_data):
         object_pattern = control_type_data.get('object')

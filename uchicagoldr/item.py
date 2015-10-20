@@ -24,6 +24,7 @@ class Item(object):
     canonical_filepath = ""
     can_read = False
     has_technical_md = False
+    header = None
     
     def __init__(self, path, root):
         self.root_path = root
@@ -70,6 +71,15 @@ class Item(object):
             hash.update(buf)
             buf = afile.read(blocksize)
         return hash.hexdigest()
+
+    def has_header(self):
+        if self.header:
+            return true
+        else:
+            return False
+    
+    def set_header(self, header_value):
+        self.header = header_value
 
     def set_md5(self, hash_value):
         self.md5 = hash_value

@@ -115,7 +115,8 @@ def validate_filename_id_placement(filename_parts, id_parts):
 def validate_filename(filepath):
      test = find_pattern_in_a_string('^\d{4}-\d{3}', filepath)
      if test:
-         return re_split('^\d{4}-\d{3}', filepath)[1]
+         
+         return re_split('^\d{4}-\d{3}', filepath)
      else:
          return None
 
@@ -242,9 +243,11 @@ def main():
             )
             new_filepath = validate_filename(item.canonical_filepath)
             if new_filepath:
-                t = split_filepath_into_list_of_words(new_filepath)
+                item.set_header(new_filepath[0])
+                t = split_filepath_into_list_of_words(new_filepath[1])
                 potential_identifier = '-'.join(t)
-                identifier_parts = [int(args.object_mapping.get('Object', x)[0])
+                identifier_parts = [int(args.object_mapping.get('Object',
+                                                                x)[0])
                                     for x in args. \
                                     object_mapping.get('Object',
                                                     'identifier').split(',')]
@@ -262,7 +265,7 @@ def main():
                              for l in args.object_mapping.get('Object',
                                                 'identifier').split(',')])
                     if c:
-                        the_object.add_object_file(item)
+                        the_object.add_object_part(item, args.object_mapping)
                     else:
                         logger.error("there are inconsistencies in the " + \
                                      "naming of the file {path}". \
@@ -274,7 +277,7 @@ def main():
                              for l in args.object_mapping.get('Object',
                                                 'identifier').split(',')])
                     if c:
-                        the_object.add_page_file(item)
+                        the_object.add_page(item, args.page_mapping)
                     else:
                         logger.error("there are inconsistencies in the " + \
                                      "naming of the file {path}". \
@@ -282,8 +285,7 @@ def main():
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
-        print(all_objects)
-        print(len(all_objects))
+        logger.debug(len(all_objects))
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
