@@ -30,7 +30,7 @@ class TextDocument(Item):
     def find_terms(self):
         assert(len(self.get_raw_string())>0)
         fileString=self.get_raw_string().lower()
-        regexPattern = '|'.join(map(escape, [" ","\n",".",",",";","'","-","\t","?","!",'(',')','[',']''\\',":","\"","\'",'“','—',"‘","’","”","#","…","/","|"]))
+        regexPattern = '|'.join(map(escape, [" ","\n",".",",",";","'","-","\t","?","!",'(',')','[',']''\\',":","\"","\'",'“','—',"‘","’","”","#","…","/","|","*"]))
         splitString=split(regexPattern,fileString)
         return splitString
 
