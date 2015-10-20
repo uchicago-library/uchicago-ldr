@@ -4,17 +4,6 @@ from uchicagoldr.item import Item
 from configparser import ConfigParser
 from re import compile as re_compile
 
-class Page_Part(Item):
-    def __init__(self, item, config_data):
-        file_type = config_data.get('Object', 'file_type')
-        pattern = config_data.get('Object', 'pattern')
-        if item.has_header():
-            filepath = item.canonical_filepath.split(item.get_header())[1]
-        else:
-            filepath = item.canonical_filepath
-        print(re_compile(pattern).search(filepath).groups())
-        self.item = item
-
 class Object_Part(Item):
     def __init__(self, item, config_data):
         pattern = config_data.get('Object', 'pattern')
@@ -26,10 +15,15 @@ class Object_Part(Item):
         print(re_compile(pattern).search(item.canonical_filepath).groups())
         
 class Page(object):
-    page_parts = []
     page_number = 0
 
-    def __init__(self):
+    def __init__(self, page_number, config_data):
+        if config_data.get('Object', 'parts').find(',') == -1:
+            iterable = [config_data.get('Object', 'parts')]
+        else:
+            iterable = config_data.get('Object','parts').split(',')
+        for i in iterable:
+            setattr(self, i, None)
         self.page_number = 0
         self.page_parts = []
 
@@ -43,11 +37,11 @@ class Page(object):
     def get_page_number(self):
         return self.page_number
                 
-    def add_page_part(self,item,config_data):
+    def add_page_part(self,item, page_part):
         assert isinstance(item, Item)
-        assert isinstance(config_data, ConfigParser)
-        new_part = Page_Part(item)
-        self.page_parts.append(new_part, config_data)
+        assert isinstance(page_part, str)
+        assert getattr(self, page_part)
+        setattr(self, page_part, item)
         
 class DigitalObject(object):
     object_identifier = ""
@@ -82,15 +76,27 @@ class DigitalObject(object):
         file_part_label_check = file_part_labels.index(page_part_label)
         if file_part_label_check != -1:
             page_part_index = config_data.get('Object', page_part_label)
-            page_type = file_matching_parts \
+            part_type = file_matching_parts \
                         [int(config_data.get('Object', page_part_label))]
-            if not page_type in config_data.get('Object', 'parts'):
+            if not part_type in config_data.get('Object', 'parts'):
                 return False
             page_number = file_matching_parts[int(config_data.get('Object', config_data.get('Object', 'number_label')))].lstrip('0')
             
         else:
             return False
-        
+        current = None
+        for n in self.pages:
+            if n.page_number == page_number:
+                current = n
+                break
+            else:
+                pass
+        if not current:
+            page = Page(page_number, config_data)
+        else:
+            page = current
+        page.add_page_part(file_object, part_type)
+            
     def find_object_identifier(self, control_type_data):
         object_pattern = control_type_data.get('object')
         assert object_pattern
