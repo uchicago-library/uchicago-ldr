@@ -12,7 +12,9 @@ class TextBatch(Batch):
     unique_terms=[]
     term_counts=[]
     doc_counts=Counter()
-    tf_idfs=[]
+    tf_idfs={}
+    batch_tf_idfs={}
+    vsm={}
 
     def __init__(self,path,root):
         Batch.__init__(self,root,path)
@@ -73,10 +75,10 @@ class TextBatch(Batch):
     def find_term_counts(self):
         assert(len(self.get_terms())>0)
         assert(len(self.get_unique_terms())>0)
-        counts=Counter()
-        uniques=self.get_unique_terms()
-        for term in uniques:
-            counts[term]=self.terms.count(term)
+        counts=Counter(self.get_terms())
+#        uniques=self.get_unique_terms()
+#        for term in uniques:
+#            counts[term]=self.terms.count(term)
         return counts
 
     def set_term_counts(self,newCounts):
@@ -85,7 +87,7 @@ class TextBatch(Batch):
     def get_term_counts(self):
         return self.term_counts
 
-    def find_tf_idfs(self):
+    def find_item_tf_idfs(self):
         assert(len(self.get_items())>0)
         assert(len(self.get_doc_counts())>0)
         assert(len(self.get_unique_terms())>0)
@@ -110,9 +112,64 @@ class TextBatch(Batch):
             itemTFIDFS[item.get_file_path()]=tfidfs
         return itemTFIDFS
 
-    def get_tf_idfs(self):
+    def get_item_tf_idfs(self):
         return self.tf_idfs
 
-    def set_tf_idfs(self,newTFIDFs):
+    def set_item_tf_idfs(self,newTFIDFs):
         assert isinstance(newTFIDFs,dict)
         self.tf_idfs=newTFIDFs
+
+    def find_batch_tf_idfs(self):
+        assert(len(self.get_term_counts())>0)
+        assert(len(self.get_unique_terms())>0)
+        assert(len(self.get_items())>0)
+        assert(len(self.get_doc_counts())>0)
+        assert(len(self.get_term_counts())>0)
+        k=.5
+        maxTerm=self.get_term_counts().most_common()[0][1]
+        batchTFIDFs={}
+        for term in self.get_unique_terms():
+            IDF=log(1+(len(self.get_items())/self.get_doc_counts()[term]))
+            tf=k+(1-k)*(self.get_term_counts()[term]/maxTerm)
+            tfidf=tf*IDF
+            batchTFIDFs[term]=tfidf
+        return batchTFIDFs
+
+    def get_batch_tf_idfs(self):
+        return self.batch_tf_idfs
+
+    def set_batch_tf_idfs(self,new_batch_tf_idfs):
+        assert(isinstance(new_batch_tf_idfs,dict))
+        self.batch_tf_idfs=new_batch_tf_idfs
+
+    def find_vector_space_model(self):
+        assert(len(self.get_batch_tf_idfs())>0)
+        normalizedVectorLengths={}
+        edgeLength=0
+        for term in self.get_batch_tf_idfs():
+            edgeLength+=self.get_batch_tf_idfs()[term]**2
+        vectorLength=edgeLength**.5
+        for term in self.get_batch_tf_idfs():
+            normalizedVectorLengths[term]=self.get_batch_tf_idfs()[term]/vectorLength
+        return normalizedVectorLengths
+
+    def get_vector_space_model(self):
+        return self.vsm
+
+    def set_vector_space_model(self,new_vsm):
+        self.vsm=new_vsm
+
+    def find_similarity(self,other_vsm):
+        simVec={}
+        simPerc=0
+        if len(self.get_vector_space_model())>len(other_vsm):
+            for term in other_vsm:
+                if term in self.get_vector_space_model():
+                    simVec[term]=self.get_vector_space_model()[term]*other_vsm[term]
+        else:
+            for term in self.get_vector_space_model():
+                if term in other_vsm:
+                    simVec[term]=self.get_vector_space_model()[term]*other_vsm[term]
+        for term in simVec:
+            simPerc+=simVec[term]
+        return simPerc

@@ -55,9 +55,6 @@ class TextDocument(Item):
         assert(len(self.get_terms())>0)
         assert(len(self.get_unique_terms())>0)
         counts=Counter(self.get_terms())
-#        uniques=self.get_unique_terms()
-#        for term in uniques:
-#            counts[term]=self.terms.count(term)
         return counts
 
     def set_term_counts(self,newCounts):
