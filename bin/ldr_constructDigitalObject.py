@@ -83,61 +83,34 @@ def add_to_digitalobject(item, pattern_groups, mapping_info, objects=[]):
         return False
     return objects
 
-# def validate_filename(filepath):
-#     assert isinstance(filepath, str)
-#     header = re_compile('^\d{4}-\d{3}/')
-#     check_for_scrc_header = header.search(filepath)
-    
-#     if header.search(filepath):
-#         header, adjusted_filepath = re_split(header,filepath)
-#         filepath_items = re_split('/|-|_',
-#                                   adjusted_filepath \
-#                                   [:adjusted_filepath.find('.')])
-#     else:
-#         filepath_items = re_splite('/|_|-',filepath)
-#     for label in mapping_info.get('Object', 'labels').split(','):
-#         label_positions = mapping_info.get('Object', label)
-#         if label_positions.find(',') != -1:
-#             label_positions = [int(x) \
-#                                for x in label_positions.split(',')]
-#         else:
-            
-#             label_positions = [int(label_positions)]
-            
-#         if False in [filepath_items[x] == \
-#                      filepath_items[y] \
-#                      for x,y in combinations(label_positions,2)]:
-#             return False
-#     return True
+def does_object_exist(identifier, list_of_objects):
+    for n in list_of_objects:
+        if n.get_identifier() == identifier:
+            return n
+        else:
+            pass
+    return None
+
+def construct_identifier(identifier_parts, identifier_values):
+    identifier = []
+    for n in identifier_parts:
+        identifier.append(identifier_values[n])
+    return '-'.join(identifier)
 
 def validate_filename_id_placement(filename_parts, id_parts):
     for id_nums in id_parts:
         if id_nums.find(',') != -1:
             n_items = [int(x) for x in id_nums.split(',')]
-            print(n_items)
+            prev = None
             for t in n_items:
-                print(filename_parts[t])
+                if prev:
+                    if prev == filename[t]:
+                        prev = filename[t]
+                    else:
+                        return False
         else:
-            print(filename_parst[int(id_nums)])
-            
-    # for x in id_parts:
-    #     l = x.split(',')
-    #     prev = None
-    #     for i in l:
-    #         if prev:
-    #             if current == prev:
-    #                 pass
-    #             else:
-    #                 return False
-    #     return True
-    #     # for n in x.split(','):
-    #     #     current = filename_parts[int(n)]
-    #     #     if prev == "":
-    #     #         next
-    #     #     elif current != prev:
-    #     #         return False
-    # return True
-        
+            pass
+    return True
 
 def validate_filename(filepath):
      test = find_pattern_in_a_string('^\d{4}-\d{3}', filepath)
@@ -147,6 +120,7 @@ def validate_filename(filepath):
          return None
 
 def split_filepath_into_list_of_words(filepath):
+    filepath = filepath[:filepath.find('.')]
     c = re_split('/|-|_', filepath)
     if c[0] == '':
         return c[1:]
@@ -267,47 +241,49 @@ def main():
                     re_compile(args.page_mapping.get('Object', 'pattern')) \
             )
             new_filepath = validate_filename(item.canonical_filepath)
-            
             if new_filepath:
-                
-                t = split_filepath_into_list_of_words(new_filepath)[:-1]
-
+                t = split_filepath_into_list_of_words(new_filepath)
+                potential_identifier = '-'.join(t)
+                identifier_parts = [int(args.object_mapping.get('Object', x)[0])
+                                    for x in args. \
+                                    object_mapping.get('Object',
+                                                    'identifier').split(',')]
+                identifier = construct_identifier(identifier_parts, t)
+                existing_object = does_object_exist(identifier, all_objects)
+                if existing_object:
+                    the_object = existing_object
+                else:
+                    the_object = DigitalObject(identifier)
+                    all_objects.append(the_object)
                 if search_pattern.status == True:
                     groups = search_pattern.data.groups()
                     c = validate_filename_id_placement(t,
                             [args.object_mapping.get('Object', l)
                              for l in args.object_mapping.get('Object',
                                                 'identifier').split(',')])
-            
-                
-                # did_it_add = add_to_digitalobject(item,
-                #                                   search_pattern.data.groups(),
-                #                                   args.object_mapping,
-                #                                   objects = all_objects)
-
+                    if c:
+                        the_object.add_object_file(item)
+                    else:
+                        logger.error("there are inconsistencies in the " + \
+                                     "naming of the file {path}". \
+                                     format(path = item.filepath))
                 elif page_search_pattern.status == True:
                     groups = page_search_pattern.data.groups()
                     c = validate_filename_id_placement(t,
-                            [args.object_mapping.get('Object', l)
+                            [args.page_mapping.get('Object', l)
                              for l in args.object_mapping.get('Object',
                                                 'identifier').split(',')])
-                    logger.debug(c)
-                # did_it_add = add_to_digitalobject(item,
-                #                                   page_search_pattern.data. \
-                #                                   groups(),
-                #                                   args.page_mapping,
-                #                                   objects = all_objects)
-
-
+                    if c:
+                        the_object.add_page_file(item)
+                    else:
+                        logger.error("there are inconsistencies in the " + \
+                                     "naming of the file {path}". \
+                                     format(path = item.filepath))
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
-                
-            # if not did_it_add:
-            #     logger.error("{path} could not be made part ".format(path = \
-            #                                                 item.filepath) + \
-            #             "of a digital object according to mapping provided")
         print(all_objects)
+        print(len(all_objects))
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
