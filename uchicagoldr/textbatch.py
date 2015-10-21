@@ -103,7 +103,6 @@ class TextBatch(Batch):
 
     def find_item_tf_idfs(self):
         assert(len(self.get_items())>0)
-        assert(len(self.get_doc_counts())>0)
         assert(len(self.get_unique_terms())>0)
         assert(len(self.get_idfs())>0)
         k=.5
@@ -135,13 +134,12 @@ class TextBatch(Batch):
         assert(len(self.get_term_counts())>0)
         assert(len(self.get_unique_terms())>0)
         assert(len(self.get_items())>0)
-        assert(len(self.get_doc_counts())>0)
         assert(len(self.get_term_counts())>0)
         k=.5
         maxTerm=self.get_term_counts().most_common()[0][1]
-        batchTFIDFs={}
+        batchTFIDFs=self.get_idfs()
         for term in self.get_unique_terms():
-            IDF=log(1+(len(self.get_items())/self.get_doc_counts()[term]))
+            IDF=batchTFIDFs[term]
             tf=k+(1-k)*(self.get_term_counts()[term]/maxTerm)
             tfidf=tf*IDF
             batchTFIDFs[term]=tfidf

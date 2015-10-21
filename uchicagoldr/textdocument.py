@@ -12,9 +12,11 @@ class TextDocument(Item):
     terms=[]
     term_counts=Counter()
     term_idfs={}
+    tfidfs={}
+    vsm={}
     
-    def __init__(self,path,root):
-        Item.__init__(self,path,root)
+    def __init__(self,path,root,in_batch=None):
+        Item.__init__(self,path,root,in_batch)
 
     def find_raw_string(self):
         assert(len(self.get_file_path())>0)
@@ -64,13 +66,13 @@ class TextDocument(Item):
     def get_term_counts(self):
         return self.term_counts
 
-    def find_term_idfs(self,batch):
-        assert(isinstance(batch,TextBatch))
+    def find_term_idfs(self):
+        assert(isinstance(self.get_batch(),TextBatch))
         assert(len(self.get_terms())>0)
-        assert(len(batch.get_idfs())>0)
+        assert(len(self.get_batch().get_idfs())>0)
         idfsubset={}
         for term in self.get_terms():
-            if term in batch.get_terms():
+            if term in self.get_batch().get_terms():
                 idfsubset[term]=batch.get_idfs()[term]
         return idfsubset
         
@@ -79,3 +81,28 @@ class TextDocument(Item):
 
     def get_term_idfs(self):
         return self.term_idfs()
+
+    def find_tf_idfs(self):
+        return self.get_batch().get_item_tf_idfs()[self.get_file_path()]
+
+    def get_tf_idfs(self):
+        return self.tfidfs
+
+    def set_tf_idfs(self,newTFIDFS):
+        self.tfidfs=newTFIDFS
+
+    def find_vector_space_model(self):
+        normalizedVectorLengths={}
+        edgeLength=0
+        for term in self.get_tf_idfs(): 
+            edgeLength+=self.get_tf_idfs()[term]**2
+        vectorLength=edgeLength**.5
+        for term in self.get_tf_idfs():
+            normalizedVectorLengths[term]=self.get_tf_idfs()[term]/vectorLength
+        return normalizedVectorLengths
+
+    def get_vector_space_model(self):
+        return self.vsm
+
+    def set_vector_space_model(self,new_vsm):
+        self.vsm=new_vsm
