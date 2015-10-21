@@ -32,7 +32,7 @@ class Page(object):
     def find_page_part(self, page_type):
         is_this_part_available = [x for x in self.page_parts \
                                   if x.part_type == page_type]
-        if len(is_this_part_available) == 1:
+        if len(is_this_part_available) > 0:
             return is_this_part_available[0]
         else:
             return None
@@ -43,5 +43,7 @@ class Page(object):
     def add_page_part(self, item, part_type):
         assert isinstance(item, Item)
         check = self.find_page_part(part_type)
-        new_part = Page_Part(item, part_type)
-        self.page_parts.append(new_part)
+        if not check:
+            new_part = Page_Part(item, part_type)
+            self.page_parts.append(new_part)
+

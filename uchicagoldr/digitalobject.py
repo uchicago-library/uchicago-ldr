@@ -5,7 +5,6 @@ from uchicagoldr.page import Page, Page_Part
 from uchicagoldr.item import Item
 from uchicagoldr.representation import Representation
 
-
 class DigitalObject(object):
     object_identifier = ""
     representations = []
@@ -29,27 +28,17 @@ class DigitalObject(object):
                        split(item.get_header())[1]
         else:
             filepath = file_object.canonical_filepath
-            
         file_matching_parts = re_compile(pattern).search(filepath).groups()
-        
+        print(file_matching_parts)
         page_part_label = config_data.get('Object', 'page_part_label')
-        
-        file_part_labels = config_data.get('Object', 'labels').split(',')
-        file_part_label_check = file_part_labels.index(page_part_label)
-        if file_part_label_check != -1:
-            page_part_index = config_data.get('Object', page_part_label)
-            part_type = file_matching_parts \
-                        [int(config_data.get('Object', page_part_label))]
-            if not part_type in config_data.get('Object', 'parts'):
-                return False
-            page_number = file_matching_parts[ \
-                                int(config_data.get('Object',
-                                                    config_data. \
-                                                    get('Object',
-                                                        'number_label')))]. \
-                                                        lstrip('0')
-        else:
-            return False
+        page_part_group_position = config_data.get('Object', page_part_label)
+        page_part = file_matching_parts[int(page_part_group_position)]
+        page_number = file_matching_parts[ \
+                            int(config_data.get('Object',
+                                                config_data. \
+                                                get('Object',
+                                                    'number_label')))]. \
+                                                    lstrip('0')
         current = None
         for n in self.pages:
             if n.page_number == page_number:
@@ -57,15 +46,15 @@ class DigitalObject(object):
                 break
             else:
                 pass
+
         if not current:
             page = Page(config_data)
             page.set_page_number(int(page_number))
             self.pages.append(page)
         else:
             page = current
-            
-        if not page.find_page_part(part_type):
-            page.add_page_part(file_object, part_type)
+        if not page.find_page_part(page_part):
+            page.add_page_part(file_object, page_part)
             
     def get_pages(self):
         return self.pages
@@ -85,10 +74,10 @@ class DigitalObject(object):
 
     def are_pages_complete(self, config_data):
         assert isinstance(config_data, ConfigParser)
-        page_parts = config_data.get('Object', 'parts')
+        page_parts = config_data.get('Object', 'parts').split(',')
         incomplete = []
         for page in self.pages:
-            this_page_parts = [x.part_type for x in page.parts]
+            this_page_parts = [x.part_type for x in page.page_parts]
             if set(page_parts) - set(this_page_parts) != set([]):
                 incomplete.append(page)
         if len(incomplete) > 0:

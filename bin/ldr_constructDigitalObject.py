@@ -191,9 +191,11 @@ def main():
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
         for obj in all_objects:
-            logger.debug(obj)
-
-            logger.debug(obj.is_page_sequence_complete())
+            # logger.debug(obj)
+            # logger.debug(obj.is_page_sequence_complete())
+            # logger.debug(obj.are_pages_complete(args.page_mapping))
+            logger.debug([x.page_parts for x in obj.pages])
+            
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
