@@ -102,12 +102,18 @@ def main():
             logger.info("Finding doc counts")
             textDocs.set_doc_counts(textDocs.find_doc_counts())
             textDocs.set_idfs(textDocs.find_idfs())
-            logger.info("Finding TFIDFs")
-            textDocs.set_batch_tf_idfs(textDocs.find_batch_tf_idfs())
+            #logger.info("Finding TFIDFs")
+            #textDocs.set_batch_tf_idfs(textDocs.find_batch_tf_idfs())
+            logger.info("Setting mock idf of 1 for each term")
+            mockIDFS={}
+            for term in textDocs.get_unique_terms():
+                mockIDFS[term]=1
+            textDocs.set_batch_tf_idfs(mockIDFS)
             logger.info("Generating restrictions VSM")
             textDocs.set_vector_space_model(textDocs.find_vector_space_model())
             restrictionsVSM=textDocs.get_vector_space_model()
         
+        logger.info("Building batch to check")
         checkb = Batch(args.root,args.item)
         sims=[]
         checkTextBatch=TextBatch(args.item,args.root)
@@ -116,22 +122,30 @@ def main():
                 textDoc=TextDocument(item.get_file_path(),item.get_root_path(),in_batch=checkTextBatch)
                 checkTextBatch.add_item(textDoc)
         if checkTextBatch.validate_items():
+            logger.info("Checking documents against VSM")
+            logger.info("Getting batch terms")
             checkTextBatch.set_terms(pruneTerms(checkTextBatch.find_terms()))
             checkTextBatch.set_unique_terms(checkTextBatch.find_unique_terms())
+            logger.info("Getting batch term counts")
             checkTextBatch.set_doc_counts(checkTextBatch.find_doc_counts())
-            #checkTextBatch.set_idfs(checkTextBatch.find_idfs())
-            mockIDFS={}
-            for term in checkTextBatch.get_terms():
-                mockIDFS[term]=1
-            checkTextBatch.set_idfs(mockIDFS)
+            logger.info("Getting batch idfs")
+            checkTextBatch.set_idfs(checkTextBatch.find_idfs())
+            #logger.info("Setting mock idf of 1 for each term.")
+            #mockIDFS={}
+            #for term in checkTextBatch.get_unique_terms():
+            #    mockIDFS[term]=1
+            #checkTextBatch.set_idfs(mockIDFS)
+            logger.info("Setting item tfidfs for the batch")
             checkTextBatch.set_item_tf_idfs(checkTextBatch.find_item_tf_idfs())
             rels={}
+            logger.info("Looping through all the items getting similarity metrics")
             for item in checkTextBatch:
                 item.set_tf_idfs(item.find_tf_idfs())
                 item.set_vector_space_model(item.find_vector_space_model())
                 path=item.get_file_path()
                 rel=textDocs.find_similarity(item.get_vector_space_model())
                 rels[path]=rel
+            logger.info("Sorting by similarity metrics")
             sortedrels = sorted(rels.items(), key=itemgetter(1))
             first10=sortedrels[0:10]
             for thing in sortedrels:
