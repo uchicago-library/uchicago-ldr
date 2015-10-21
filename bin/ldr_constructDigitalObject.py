@@ -21,9 +21,12 @@ from re import compile as re_compile, split as re_split
 from sqlalchemy import Table
 
 from uchicagoldr.batch import Batch
-from uchicagoldr.item import Item
 from uchicagoldr.database import Database
 from uchicagoldr.digitalobject import DigitalObject
+from uchicagoldr.digital_object_functions import construct_identifier, \
+    does_object_exist,split_filepath_into_list_of_words, validate_filename, \
+    validate_filename_id_placement
+from uchicagoldr.item import Item
 
 class ReadMapping(Action):
     def __call__(self,parser,namespace,value,option_string=None):
@@ -46,106 +49,7 @@ class ReadMapping(Action):
                 raise ValueError("your map is missing a " + \
                         "definition for {label}".format(label = label))
         setattr(namespace,self.dest,config)
-
-def add_to_digitalobject(item, pattern_groups, mapping_info, objects=[]):
-
-    assert isinstance(mapping_info, ConfigParser)
-    assert isinstance(item, Item)
-    assert isinstance(pattern_groups, tuple)
-    group = pattern_groups
-    is_it_valid = validate_filename(item.canonical_filepath)
-    if is_it_valid:
-        identifier_parts = mapping_info.get('Object',
-                                            'identifier'). \
-                                            split(',')
-        identifier = []
-        for l in identifier_parts:
-            positions = mapping_info.get('Object', l)
-            if positions.find(',') != -1:
-                position = int(positions.split(',')[0])
-            else:
-                position = int(positions)
-            identifier.append(group[position])
-        potential_identifier = '-'.join(identifier)
-
-        is_an_object_already_present = [x for x in objects \
-                                        if x.get_identifier() == \
-                                        potential_identifier]
-        print(objects)
-        if is_an_object_already_present:
-            the_object = is_an_object_already_present[0]
-            objects.append(the_object)
-        else:
-            the_object = DigitalObject(identifier)
-        the_object.add_object_file(the_object)
-
-    else:
-        return False
-    return objects
-
-def does_object_exist(identifier, list_of_objects):
-    for n in list_of_objects:
-        if n.get_identifier() == identifier:
-            return n
-        else:
-            pass
-    return None
-
-def construct_identifier(identifier_parts, identifier_values):
-    identifier = []
-    for n in identifier_parts:
-        identifier.append(identifier_values[n])
-    return '-'.join(identifier)
-
-def validate_filename_id_placement(filename_parts, id_parts):
-    for id_nums in id_parts:
-        if id_nums.find(',') != -1:
-            n_items = [int(x) for x in id_nums.split(',')]
-            prev = None
-            for t in n_items:
-                if prev:
-                    if prev == filename[t]:
-                        prev = filename[t]
-                    else:
-                        return False
-        else:
-            pass
-    return True
-
-def validate_filename(filepath):
-     test = find_pattern_in_a_string('^\d{4}-\d{3}', filepath)
-     if test:
-         
-         return re_split('^\d{4}-\d{3}', filepath)
-     else:
-         return None
-
-def split_filepath_into_list_of_words(filepath):
-    filepath = filepath[:filepath.find('.')]
-    c = re_split('/|-|_', filepath)
-    if c[0] == '':
-        return c[1:]
-    else:
-        return c
-
-def find_pattern_in_a_string(pattern, a_string):
-    pattern = re_compile(pattern)
-    if not pattern.search(a_string):
-        return None
-    return pattern
-    
-
-def get_truthiness_of_list(a_list):
-    o = True
-    for n in a_list:
-       o = o&n
-       if not o:
-           break
-    return 0
-
-def find_identifier_in_list(potential_identifier, a_list):
-    return [x for x in a_list if x.get_identifier() == potential_identifier]
-
+        
 def main():
     parser = ArgumentParser(description = "{description}". \
                             format(description = __description__),
@@ -241,7 +145,8 @@ def main():
             page_search_pattern = item.find_matching_object_pattern( \
                     re_compile(args.page_mapping.get('Object', 'pattern')) \
             )
-            new_filepath = validate_filename(item.canonical_filepath)
+            new_filepath = validate_filename(item.canonical_filepath,
+                                             '^\d{4}-\d{3}')
             if new_filepath:
                 item.set_header(new_filepath[0])
                 t = split_filepath_into_list_of_words(new_filepath[1])
@@ -285,7 +190,11 @@ def main():
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
-        logger.debug(len(all_objects))
+        for obj in all_objects:
+            logger.debug(obj)
+            logger.debug(len(obj.get_representations()))
+            logger.debug(len(obj.get_pages()))
+            
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")

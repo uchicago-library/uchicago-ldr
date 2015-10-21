@@ -12,8 +12,6 @@ class Object_Part(Item):
         else:
             filepath = item.canonical_filepath
         
-        print(re_compile(pattern).search(item.canonical_filepath).groups())
-        
 class Page(object):
     page_number = 0
 
@@ -23,7 +21,7 @@ class Page(object):
         else:
             iterable = config_data.get('Object','parts').split(',')
         for i in iterable:
-            setattr(self, i, None)
+            setattr(self, i, "undefined")
         self.page_number = 0
         self.page_parts = []
 
@@ -40,7 +38,7 @@ class Page(object):
     def add_page_part(self,item, page_part):
         assert isinstance(item, Item)
         assert isinstance(page_part, str)
-        assert getattr(self, page_part)
+        assert getattr(self,page_part)
         setattr(self, page_part, item)
         
 class DigitalObject(object):
@@ -50,13 +48,13 @@ class DigitalObject(object):
     
     def __init__(self, identifier):
         self.identifier = identifier
-        self.object_files = []
-        self.page_files = []
+        self.representations = []
+        self.pages = []
         
     def add_object_part(self, file_object, config_data):
         assert isinstance(file_object, Item)
         Object_Part(file_object, config_data)
-        self.object_files.append(file_object)
+        self.representations.append(file_object)
 
     def add_page(self, file_object, config_data):
         assert isinstance(file_object, Item)
@@ -80,8 +78,12 @@ class DigitalObject(object):
                         [int(config_data.get('Object', page_part_label))]
             if not part_type in config_data.get('Object', 'parts'):
                 return False
-            page_number = file_matching_parts[int(config_data.get('Object', config_data.get('Object', 'number_label')))].lstrip('0')
-            
+            page_number = file_matching_parts[ \
+                                int(config_data.get('Object',
+                                                    config_data. \
+                                                    get('Object',
+                                                        'number_label')))]. \
+                                                        lstrip('0')
         else:
             return False
         current = None
@@ -93,25 +95,18 @@ class DigitalObject(object):
                 pass
         if not current:
             page = Page(page_number, config_data)
+            self.pages.append(page)
         else:
             page = current
         page.add_page_part(file_object, part_type)
-            
-    def find_object_identifier(self, control_type_data):
-        object_pattern = control_type_data.get('object')
-        assert object_pattern
-        pattern_search = re_compile(object_pattern).search(self.filepath)
-        if pattern_search:
-            return namedtuple("data", "valid keys")( \
-                                                     True,
-                                                     pattern_search.groups() \
-            )
-        else:
-            return namedtuple("data", "valid keys")( \
-                                                     False,
-                                                     None \
-            )
         
+
+    def get_pages(self):
+        return self.pages
+
+    def get_representations(self):
+        return self.representations
+    
     def get_identifier(self):
         return self.identifier
     
