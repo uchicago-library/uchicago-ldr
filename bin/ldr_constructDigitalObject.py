@@ -192,9 +192,8 @@ def main():
                              format(path = item.filepath))
         for obj in all_objects:
             logger.debug(obj)
-            logger.debug(len(obj.get_representations()))
-            logger.debug(len(obj.get_pages()))
-            
+
+            logger.debug(obj.is_page_sequence_complete())
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")

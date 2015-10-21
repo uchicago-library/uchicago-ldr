@@ -1,46 +1,11 @@
+from configparser import ConfigParser
 from re import compile as re_compile, split as re_split
 
+from uchicagoldr.page import Page, Page_Part
 from uchicagoldr.item import Item
-from configparser import ConfigParser
-from re import compile as re_compile
+from uchicagoldr.representation import Representation
 
-class Object_Part(Item):
-    def __init__(self, item, config_data):
-        pattern = config_data.get('Object', 'pattern')
-        if item.has_header():
-            filepath = item.canonical_filepath.split(item.get_header())[1]
-        else:
-            filepath = item.canonical_filepath
-        
-class Page(object):
-    page_number = 0
 
-    def __init__(self, page_number, config_data):
-        if config_data.get('Object', 'parts').find(',') == -1:
-            iterable = [config_data.get('Object', 'parts')]
-        else:
-            iterable = config_data.get('Object','parts').split(',')
-        for i in iterable:
-            setattr(self, i, "undefined")
-        self.page_number = 0
-        self.page_parts = []
-
-    def set_page_number(self,number):
-        assert isinstance(number,int)
-        if self.page.number > 0:
-            raise ValueError("can't set page number twice")
-        else:
-            self.page_number = number
-
-    def get_page_number(self):
-        return self.page_number
-                
-    def add_page_part(self,item, page_part):
-        assert isinstance(item, Item)
-        assert isinstance(page_part, str)
-        assert getattr(self,page_part)
-        setattr(self, page_part, item)
-        
 class DigitalObject(object):
     object_identifier = ""
     representations = []
@@ -53,8 +18,7 @@ class DigitalObject(object):
         
     def add_object_part(self, file_object, config_data):
         assert isinstance(file_object, Item)
-        Object_Part(file_object, config_data)
-        self.representations.append(file_object)
+        self.representations.append(Representation(file_object))
 
     def add_page(self, file_object, config_data):
         assert isinstance(file_object, Item)
@@ -94,16 +58,43 @@ class DigitalObject(object):
             else:
                 pass
         if not current:
-            page = Page(page_number, config_data)
+            page = Page(config_data)
+            page.set_page_number(int(page_number))
             self.pages.append(page)
         else:
             page = current
-        page.add_page_part(file_object, part_type)
-        
-
+            
+        if not page.find_page_part(part_type):
+            page.add_page_part(file_object, part_type)
+            
     def get_pages(self):
         return self.pages
 
+    def is_page_sequence_complete(self):
+        last_page = max([x.page_number for x in self.pages])
+        completed_sequence = [x for x in range(1,last_page)]
+        missing = []
+        for n in completed_sequence:
+            if n in [x.page_number for x in self.pages]:
+                pass
+            else:
+                missing.append(n)
+        if len(missing) > 0:
+            return missing
+        return True
+
+    def are_pages_complete(self, config_data):
+        assert isinstance(config_data, ConfigParser)
+        page_parts = config_data.get('Object', 'parts')
+        incomplete = []
+        for page in self.pages:
+            this_page_parts = [x.part_type for x in page.parts]
+            if set(page_parts) - set(this_page_parts) != set([]):
+                incomplete.append(page)
+        if len(incomplete) > 0:
+            return incomplete
+        return True
+    
     def get_representations(self):
         return self.representations
     
