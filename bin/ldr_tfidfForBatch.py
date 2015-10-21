@@ -94,6 +94,8 @@ def main():
             textDocs.set_term_counts(textDocs.find_term_counts())
             logger.info("Finding doc counts")
             textDocs.set_doc_counts(textDocs.find_doc_counts())
+            logger.info("Finding IDFs")
+            textDocs.set_idfs(textDocs.find_idfs())
             logger.info("Finding TFIDFs")
             textDocs.set_item_tf_idfs(textDocs.find_item_tf_idfs())
             for key in textDocs.get_item_tf_idfs():

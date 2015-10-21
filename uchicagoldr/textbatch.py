@@ -12,6 +12,7 @@ class TextBatch(Batch):
     unique_terms=[]
     term_counts=[]
     doc_counts=Counter()
+    idfs={}
     tf_idfs={}
     batch_tf_idfs={}
     vsm={}
@@ -87,16 +88,27 @@ class TextBatch(Batch):
     def get_term_counts(self):
         return self.term_counts
 
-    def find_item_tf_idfs(self):
-        assert(len(self.get_items())>0)
-        assert(len(self.get_doc_counts())>0)
-        assert(len(self.get_unique_terms())>0)
-        k=.5
-        itemTFIDFS={}
+    def find_idfs(self):
         termIDFS={}
         for term in self.get_unique_terms():
             IDF=log(1+(len(self.get_items())/self.get_doc_counts()[term]))
             termIDFS[term]=IDF
+        return termIDFS
+
+    def get_idfs(self):
+        return self.idfs
+
+    def set_idfs(self,newIDFS):
+        self.idfs=newIDFS
+
+    def find_item_tf_idfs(self):
+        assert(len(self.get_items())>0)
+        assert(len(self.get_doc_counts())>0)
+        assert(len(self.get_unique_terms())>0)
+        assert(len(self.get_idfs())>0)
+        k=.5
+        itemTFIDFS={}
+        termIDFS=self.get_idfs()
         for item in self.get_items():
             item.set_raw_string(item.find_raw_string())
             item.set_terms(item.find_terms())

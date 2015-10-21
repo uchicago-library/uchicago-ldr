@@ -11,6 +11,7 @@ class TextDocument(Item):
     unique_terms=[]
     terms=[]
     term_counts=Counter()
+    term_idfs={}
     
     def __init__(self,path,root):
         Item.__init__(self,path,root)
@@ -62,3 +63,19 @@ class TextDocument(Item):
 
     def get_term_counts(self):
         return self.term_counts
+
+    def find_term_idfs(self,batch):
+        assert(isinstance(batch,TextBatch))
+        assert(len(self.get_terms())>0)
+        assert(len(batch.get_idfs())>0)
+        idfsubset={}
+        for term in self.get_terms():
+            if term in batch.get_terms():
+                idfsubset[term]=batch.get_idfs()[term]
+        return idfsubset
+        
+    def set_term_idfs(self,newidfs):
+        self.term_idfs=newidfs
+
+    def get_term_idfs(self):
+        return self.term_idfs()
