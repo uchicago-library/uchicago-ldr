@@ -29,13 +29,13 @@ class TextBatch(Batch):
                 return False
         return True
 
-    def find_terms(self):
+    def find_terms(self,purge_raw=False):
         assert(len(self.get_items())>0)
         itemTerms=[]
         for item in self.get_items():
             assert isinstance(item,TextDocument)
             item.set_raw_string(item.find_raw_string())
-            item.set_terms(item.find_terms())
+            item.set_terms(item.find_terms(purge_raw=True))
             itemTerms+=item.get_terms()
         return itemTerms
 
@@ -50,7 +50,7 @@ class TextBatch(Batch):
         assert(len(self.get_items())>0)
         counts=Counter()
         for item in self.get_items():
-            item.set_terms(item.find_terms())
+            item.set_terms(item.get_terms())
             item.set_unique_terms(item.find_unique_terms())
             for term in item.get_unique_terms():
                 counts[term]+=1

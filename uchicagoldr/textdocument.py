@@ -7,7 +7,7 @@ class TextDocument(Item):
     """
     A sublass of the item class, meant to potentially aid with text analysis
     """
-    raw_string=""
+    raw_string=None
     unique_terms=[]
     terms=[]
     term_counts=Counter()
@@ -30,11 +30,13 @@ class TextDocument(Item):
     def set_raw_string(self,new_raw_string):
         self.raw_string=new_raw_string
 
-    def find_terms(self):
-        assert(len(self.get_raw_string())>0)
+    def find_terms(self,purge_raw=False):
+        assert(self.get_raw_string() != None)
         fileString=self.get_raw_string().lower()
         regexPattern = '|'.join(map(escape, [" ","\n",".",",",";","'","-","\t","?","!",'(',')','[',']''\\',":","\"","\'",'“','—',"‘","’","”","#","…","/","|","*"]))
         splitString=split(regexPattern,fileString)
+        if purge_raw:
+            self.set_raw_string(None)
         return splitString
 
     def set_terms(self,newTerms):

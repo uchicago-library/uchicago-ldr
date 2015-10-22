@@ -15,6 +15,7 @@ from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
 from operator import itemgetter
+from math import log
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -101,14 +102,37 @@ def main():
             textDocs.set_term_counts(textDocs.find_term_counts())
             logger.info("Finding doc counts")
             textDocs.set_doc_counts(textDocs.find_doc_counts())
-            textDocs.set_idfs(textDocs.find_idfs())
-            #logger.info("Finding TFIDFs")
-            #textDocs.set_batch_tf_idfs(textDocs.find_batch_tf_idfs())
-            logger.info("Setting mock idf of 1 for each term")
-            mockIDFS={}
+            #textDocs.set_idfs(textDocs.find_idfs())
+
+            #Invert the idfs for the language model, in order to reward common terms and penalize unique terms. Lets see how this works out...
+            #logger.info("Inverting IDFs in the LM.")
+            #for term in textDocs.get_idfs():
+            #    textDocs.get_idfs()[term]=1/textDocs.get_idfs()[term]
+
+            #The same idea as above, but manually calculating them by taking the recip of the inner fraction
+            #invertedIDF={}
+            #for term in textDocs.get_unique_terms():
+            #    iIDF=log(1+(textDocs.get_doc_counts()[term]/len(textDocs.get_items())))
+            #    invertedIDF[term]=iIDF
+            #textDocs.set_idfs(invertedIDF)
+
+            #Does this work better without taking the log?
+            #Maybe?
+            invertedIDF={}
             for term in textDocs.get_unique_terms():
-                mockIDFS[term]=1
-            textDocs.set_batch_tf_idfs(mockIDFS)
+                iIDF=1+(textDocs.get_doc_counts()[term]/len(textDocs.get_items()))
+                invertedIDF[term]=iIDF
+            textDocs.set_idfs(invertedIDF)
+
+
+#            logger.info("Setting mock idf of 1 for each term")
+#            mockIDFS={}
+#            for term in textDocs.get_unique_terms():
+#                mockIDFS[term]=1
+#            textDocs.set_idfs(mockIDFS)
+
+            logger.info("Finding TFIDFs")
+            textDocs.set_batch_tf_idfs(textDocs.find_batch_tf_idfs())
             logger.info("Generating restrictions VSM")
             textDocs.set_vector_space_model(textDocs.find_vector_space_model())
             restrictionsVSM=textDocs.get_vector_space_model()
@@ -124,7 +148,7 @@ def main():
         if checkTextBatch.validate_items():
             logger.info("Checking documents against VSM")
             logger.info("Getting batch terms")
-            checkTextBatch.set_terms(pruneTerms(checkTextBatch.find_terms()))
+            checkTextBatch.set_terms(pruneTerms(checkTextBatch.find_terms(purge_raw=True)))
             checkTextBatch.set_unique_terms(checkTextBatch.find_unique_terms())
             logger.info("Getting batch term counts")
             checkTextBatch.set_doc_counts(checkTextBatch.find_doc_counts())
