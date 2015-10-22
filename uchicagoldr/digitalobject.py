@@ -15,47 +15,40 @@ class DigitalObject(object):
         self.representations = []
         self.pages = []
         
-    def add_object_part(self, file_object, config_data):
+    def add_representation(self, file_object):
         assert isinstance(file_object, Item)
-        self.representations.append(Representation(file_object))
-
-    def add_page(self, file_object, config_data):
-        assert isinstance(file_object, Item)
-        assert isinstance(config_data, ConfigParser)
-        pattern = config_data.get('Object', 'pattern')
-        if file_object.has_header():
-            filepath = file_object.canonical_filepath. \
-                       split(item.get_header())[1]
+        if self.find_a_representation(file_object):
+            None
         else:
-            filepath = file_object.canonical_filepath
-        file_matching_parts = re_compile(pattern).search(filepath).groups()
-        print(file_matching_parts)
-        page_part_label = config_data.get('Object', 'page_part_label')
-        page_part_group_position = config_data.get('Object', page_part_label)
-        page_part = file_matching_parts[int(page_part_group_position)]
-        page_number = file_matching_parts[ \
-                            int(config_data.get('Object',
-                                                config_data. \
-                                                get('Object',
-                                                    'number_label')))]. \
-                                                    lstrip('0')
-        current = None
+            new = Representation(file_object)
+            self.representations.append(new)
+        return new
+    
+    def find_a_page(self, page_number):
         for n in self.pages:
             if n.page_number == page_number:
-                current = n
-                break
-            else:
-                pass
+                return n
+        return None
 
-        if not current:
-            page = Page(config_data)
-            page.set_page_number(int(page_number))
-            self.pages.append(page)
+
+    def find_a_representation(self, other):
+        assert isinstance(other, Item)
+        for n in self.representations:
+            if n.item.canonical_filepath == other.canonical_filepath:
+                return n
+        return None
+    
+    def add_page(self, file_object, page_num, part_type):
+        assert isinstance(file_object, Item)
+        assert isinstance(page_num, int)
+        if self.find_a_page(page_num):
+            page_obj = self.find_a_page(page_num)
         else:
-            page = current
-        if not page.find_page_part(page_part):
-            page.add_page_part(file_object, page_part)
-            
+            page_obj = Page(page_num)
+            self.pages.append(page_obj)
+        page_obj.add_page_part(file_object, part_type)
+        return page_obj
+          
     def get_pages(self):
         return self.pages
 

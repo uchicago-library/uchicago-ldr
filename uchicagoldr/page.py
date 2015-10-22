@@ -11,23 +11,9 @@ class Page(object):
     page_number = 0
     page_parts = []
     
-    def __init__(self, config_data):
-        if config_data.get('Object', 'parts').find(',') == -1:
-            iterable = [config_data.get('Object', 'parts')]
-        else:
-            iterable = config_data.get('Object','parts').split(',')
-        for i in iterable:
-            setattr(self, i, "undefined")
-        self.page_number = 0
+    def __init__(self, page_number):
+        self.page_number = page_number
         self.page_parts = []
-
-    def set_page_number(self, number):
-        assert isinstance(number, int)
-        
-        if self.page_number > 0:
-            raise ValueError("can't set page number twice")
-        else:
-            self.page_number = number
 
     def find_page_part(self, page_type):
         is_this_part_available = [x for x in self.page_parts \
@@ -36,14 +22,14 @@ class Page(object):
             return is_this_part_available[0]
         else:
             return None
-            
+        
     def get_page_number(self):
         return self.page_number
 
     def add_page_part(self, item, part_type):
         assert isinstance(item, Item)
+        assert(part_type, str)
         check = self.find_page_part(part_type)
-        if not check:
-            new_part = Page_Part(item, part_type)
-            self.page_parts.append(new_part)
+        new_part = Page_Part(item, part_type)
+        self.page_parts.append(new_part)
 

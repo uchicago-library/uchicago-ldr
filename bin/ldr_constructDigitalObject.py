@@ -148,54 +148,80 @@ def main():
             new_filepath = validate_filename(item.canonical_filepath,
                                              '^\d{4}-\d{3}')
             if new_filepath:
+                header,filepath = new_filepath
                 item.set_header(new_filepath[0])
                 t = split_filepath_into_list_of_words(new_filepath[1])
-                potential_identifier = '-'.join(t)
-                identifier_parts = [int(args.object_mapping.get('Object',
-                                                                x)[0])
-                                    for x in args. \
-                                    object_mapping.get('Object',
-                                                    'identifier').split(',')]
-                identifier = construct_identifier(identifier_parts, t)
-                existing_object = does_object_exist(identifier, all_objects)
-                if existing_object:
-                    the_object = existing_object
+
+                id_labels = args.object_mapping.get('Object', 'identifier').split(',')
+                ids = []
+                for n in id_labels:
+                    ids.append((t[int(args.object_mapping.get('Object', n).split(',')[0])]))
+                a_id = '-'.join(ids)
+
+
+                l = [x for x in all_objects if x.get_identifier() == a_id]
+                if l:
+                    obj = l[0]
                 else:
-                    the_object = DigitalObject(identifier)
-                    all_objects.append(the_object)
+                    new = DigitalObject(a_id)
+                    all_objects.append(new)
+                    obj = new
                 if search_pattern.status == True:
                     groups = search_pattern.data.groups()
-                    c = validate_filename_id_placement(t,
-                            [args.object_mapping.get('Object', l)
-                             for l in args.object_mapping.get('Object',
-                                                'identifier').split(',')])
-                    if c:
-                        the_object.add_object_part(item, args.object_mapping)
-                    else:
-                        logger.error("there are inconsistencies in the " + \
-                                     "naming of the file {path}". \
-                                     format(path = item.filepath))
+                    obj.add_representation(item)
+                    print(obj.representations)
                 elif page_search_pattern.status == True:
                     groups = page_search_pattern.data.groups()
-                    c = validate_filename_id_placement(t,
-                            [args.page_mapping.get('Object', l)
-                             for l in args.object_mapping.get('Object',
-                                                'identifier').split(',')])
-                    if c:
-                        the_object.add_page(item, args.page_mapping)
-                    else:
-                        logger.error("there are inconsistencies in the " + \
-                                     "naming of the file {path}". \
-                                     format(path = item.filepath))
+                    page_number_position = args.page_mapping.get('Object',
+                                                                 'page_number')
+                    part_type_position = int(args.page_mapping.get('Object', 'file_type'))
+                    page_number = int(groups[int(page_number_position[0])].lstrip('0'))
+                    part_type = groups[int(part_type_position)]
+                    page = obj.add_page(item, page_number, part_type)
+                    
+            
+
+                # identifier_parts = [int(args.object_mapping.get('Object',
+                #                                                 x)[0])
+                #                     for x in args. \
+                #                     object_mapping.get('Object',
+                #                                     'identifier').split(',')]
+                # identifier = construct_identifier(identifier_parts, t)
+                # existing_object = does_object_exist(identifier, all_objects)
+                # if existing_object:
+                #     the_object = existing_object
+                # else:
+                #     the_object = DigitalObject(identifier)
+                #     all_objects.append(the_object)
+                # if search_pattern.status == True:
+
+                #     c = validate_filename_id_placement(t,
+                #             [args.object_mapping.get('Object', l)
+                #              for l in args.object_mapping.get('Object',
+                #                                 'identifier').split(',')])
+                #     if c:
+                #         the_object.add_object_part(item, args.object_mapping)
+                #     else:
+                #         logger.error("there are inconsistencies in the " + \
+                #                      "naming of the file {path}". \
+                #                      format(path = item.filepath))
+
+                #     groups = page_search_pattern.data.groups()
+                #     c = validate_filename_id_placement(t,
+                #             [args.page_mapping.get('Object', l)
+                #              for l in args.object_mapping.get('Object',
+                #                                 'identifier').split(',')])
+                #     if c:
+                #         the_object.add_page(item, args.page_mapping)
+                #     else:
+                #         logger.error("there are inconsistencies in the " + \
+                #                      "naming of the file {path}". \
+                #                      format(path = item.filepath))
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
-        for obj in all_objects:
-            # logger.debug(obj)
-            # logger.debug(obj.is_page_sequence_complete())
-            # logger.debug(obj.are_pages_complete(args.page_mapping))
-            logger.debug([x.page_parts for x in obj.pages])
-            
+
+
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
