@@ -18,6 +18,7 @@ from os import listdir
 from os.path import isdir
 from os.path import join
 from os.path import relpath
+from os.path import exists
 from hashlib import md5
 from hashlib import sha256
 
@@ -99,40 +100,58 @@ def main():
         destinationDataRoot=join(stageRoot,'data/')
         prefix=args.prefix
 
-        existingDataSubDirs=[name for name in getImmediateSubDirs(destinationDataRoot) if prefix in name]
+        if not prefix[-1].isdigit():
 
-        if len(existingDataSubDirs) < 1:
-            nextNum=str(1)
+            existingDataSubDirs=[name for name in getImmediateSubDirs(destinationDataRoot) if prefix in name]
+
+            if len(existingDataSubDirs) < 1:
+                nextNum=str(1)
+            else:
+                nums=[]
+                for directory in existingDataSubDirs:
+                    num=directory.strip(prefix)
+                    nums.append(int(num))
+                nums.sort()
+                nextNum=str(nums[-1]+1)
+
+            destinationAdminFolder=join(destinationAdminRoot,prefix+nextNum)
+            destinationDataFolder=join(destinationDataRoot,prefix+nextNum)
+
+            mkAdminDirArgs=['mkdir',destinationAdminFolder]
+            mkAdminDirComm=BashCommand(mkAdminDirArgs)
+            assert(mkAdminDirComm.run_command()[0])
+            logger.info("mkAdminDir output begins")
+            logger.info(mkAdminDirComm.get_data()[1].args)
+            logger.info(mkAdminDirComm.get_data()[1].returncode)
+            logger.info(mkAdminDirComm.get_data()[1].stdout)
+            logger.info("mkAdminDir output ends")
+
+            mkDataDirArgs=['mkdir',destinationDataFolder]
+            mkDataDirComm=BashCommand(mkDataDirArgs)
+            assert(mkDataDirComm.run_command()[0])
+            logger.info("mkDataDir output begins")
+            logger.info(mkDataDirComm.get_data()[1].args)
+            logger.info(mkDataDirComm.get_data()[1].returncode)
+            logger.info(mkDataDirComm.get_data()[1].stdout)
+            logger.info("mkAdminDir output ends")
+
+            assert(isdir(destinationAdminFolder))
+            assert(isdir(destinationDataFolder))
+
         else:
-            nums=[]
-            for directory in existingDataSubDirs:
-                num=directory.strip(prefix)
-                nums.append(int(num))
-            nums.sort()
-            nextNum=str(nums[-1]+1)
-
-        mkAdminDirArgs=['mkdir',destinationAdminRoot+prefix+nextNum]
-        mkAdminDirComm=BashCommand(mkAdminDirArgs)
-        assert(mkAdminDirComm.run_command()[0])
-        logger.info("mkAdminDir output begins")
-        logger.info(mkAdminDirComm.get_data()[1].args)
-        logger.info(mkAdminDirComm.get_data()[1].returncode)
-        logger.info(mkAdminDirComm.get_data()[1].stdout)
-        logger.info("mkAdminDir output ends")
-
-        mkDataDirArgs=['mkdir',destinationDataRoot+prefix+nextNum]
-        mkDataDirComm=BashCommand(mkDataDirArgs)
-        assert(mkDataDirComm.run_command()[0])
-        logger.info("mkDataDir output begins")
-        logger.info(mkDataDirComm.get_data()[1].args)
-        logger.info(mkDataDirComm.get_data()[1].returncode)
-        logger.info(mkDataDirComm.get_data()[1].stdout)
-        logger.info("mkAdminDir output ends")
+            logger.info("Attempting to resume transfer into "+join(destinationDataRoot,prefix))
+            
+            destinationAdminFolder=join(destinationAdminRoot,prefix)
+            assert(isdir(destinationAdminFolder))
+            destinationDataFolder=join(destinationDataRoot,prefix)
+            assert(isdir(destinationDataFolder))
 
         logger.info("Beginning rsync")
-        rsyncArgs=['rsync','-avz',args.item,destinationDataRoot+prefix+nextNum]
+        rsyncArgs=['rsync','-avz',args.item,destinationDataFolder]
         rsyncCommand=BashCommand(rsyncArgs)
         assert(rsyncCommand.run_command()[0])
+        with open(join(destinationAdminFolder,'rsyncFromOrigin.txt'),'a') as f:
+            f.write(str(rsyncCommand.get_data()[1])+'\n')
         logger.info("Rsync output begins")
         logger.info(rsyncCommand.get_data()[1].args)
         logger.info(rsyncCommand.get_data()[1].returncode)
@@ -143,22 +162,53 @@ def main():
         logger.info("Creating batch from original files.")
         originalFiles=Batch(args.root,directory=args.item)
 
+        existingOriginalFileHashes={}
         originalFileHashes={}
         logger.info("Hashing original files")
-        for item in originalFiles.find_items(from_directory=True):
-            item.set_sha256(item.find_sha256_hash())
-            item.set_md5(item.find_md5_hash())
-            originalFileHashes[relpath(item.get_file_path(),start=item.get_root_path())]=[item.get_sha256(),item.get_md5()]
+        if exists(join(destinationAdminFolder,'fixityFromOrigin.txt')):
+            with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'r') as f:
+                for line in f.readlines():
+                    splitLine=line.split('\t')
+                    existingOriginalFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
+
+        with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'a') as f:
+            for item in originalFiles.find_items(from_directory=True):
+                if item.test_readability():
+                    item.set_root_path(args.root)
+                    if relpath(item.get_file_path(),start=item.get_root_path()) not in existingOriginalFileHashes:
+                        item.set_sha256(item.find_sha256_hash())
+                        item.set_md5(item.find_md5_hash())
+                        originalFileHashes[relpath(item.get_file_path(),start=item.get_root_path())]=[item.get_sha256(),item.get_md5()]
+                else:
+                    originalFileHashes[relpath(item.get_file_path(),start=item.get_root_path())]=["ERROR","ERROR"]
+            for entry in originalFileHashes:
+                f.write(entry+"\t"+originalFileHashes[entry][0]+'\t'+originalFileHashes[entry][1]+'\n')
 
         logger.info("Creating batch from moved files.")
-        movedFiles=Batch(args.dest_root,directory=destinationDataRoot)
+        movedFiles=Batch(args.dest_root,directory=destinationDataFolder)
         
+        existingMovedFileHashes={}
         movedFileHashes={}
         logger.info("Hashing copied files.")
-        for item in movedFiles.find_items(from_directory=True):
-            item.set_sha256(item.find_sha256_hash())
-            item.set_md5(item.find_md5_hash())
-            movedFileHashes[relpath(item.get_file_path(),start=join(destinationDataRoot,prefix+nextNum))]=[item.get_sha256(),item.get_md5()]
+        if exists(join(destinationAdminFolder,'fixityInStaging.txt')):
+            with open(join(destinationAdminFolder,'fixityInStaging.txt'),'r') as f:
+                for line in f.readlines():
+                    splitLine=line.split('\t')
+                    existingMovedFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
+
+        with open(join(destinationAdminFolder,'fixityInStaging.txt'),'a') as f:
+
+            for item in movedFiles.find_items(from_directory=True):
+                if item.test_readability():
+                    item.set_root_path(destinationDataFolder)
+                    if relpath(item.get_file_path(),start=item.get_root_path()) not in existingMovedFileHashes:
+                        item.set_sha256(item.find_sha256_hash())
+                        item.set_md5(item.find_md5_hash())
+                        movedFileHashes[relpath(item.get_file_path(),start=destinationDataFolder)]=[item.get_sha256(),item.get_md5()]
+                else:
+                    movedFileHashes[relpath(item.get_file_path(),start=item.get_root_path())]=["ERROR","ERROR"]
+            for entry in movedFileHashes:
+                f.write(entry+"\t"+movedFileHashes[entry][0]+'\t'+movedFileHashes[entry][1]+'\n')
 
         notMoved=[key for key in originalFileHashes.keys() if key not in movedFileHashes.keys()]
         badHash=[key for key in originalFileHashes.keys() if key not in notMoved and originalFileHashes[key] != movedFileHashes[key]]
@@ -172,9 +222,10 @@ def main():
             elif entry in badHash:
                 logger.info("BAD HASH: "+entry+":"+str(originalFileHashes[entry]))
        
-        logger.info(str(len(originalFileHashes)-len(notMoved)-len(badHash))+" files moved without issue.")
-        logger.info(str(len(notMoved))+" files not copied.")
-        logger.info(str(len(badHash))+" have a different hash from the origin.")
+        logger.info(str(len(originalFileHashes)-len(notMoved)-len(badHash))+" file(s) moved without issue.")
+        logger.info(str(len(existingOriginalFileHashes))+" file(s) were previously moved into the staging directory.")
+        logger.info(str(len(notMoved))+" file(s) not copied.")
+        logger.info(str(len(badHash))+" file(s) have a different hash from the origin.")
 
         return 0
     except KeyboardInterrupt:
