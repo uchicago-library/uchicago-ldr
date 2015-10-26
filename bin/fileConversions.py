@@ -20,10 +20,28 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
+def parseResult(result):
+    if result[0] == False:
+        logger.warn("Conversion failed!")
+        logger.debug("Command output follows:")
+        logger.debug(result[1])
+        logger.debug("Command output ends")
+    elif result[0] == None:
+        pass
+    else:
+        logger.debug(str(result))
+        if result[1].returncode != 0:
+            logger.warn("Conversion retruned a non-zero exit status: "+str(result[1].returncode))
+            logger.debug("Command output follows:")
+            logger.debug(result[1])
+            logger.debug("Command output ends")
+        logger.info("Conversion run")
+
 def audioConverter(item):
     if not exists(item.get_file_path()+'.presform.wav'):
         audioConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),item.get_file_path()+'.presform.wav']
         audioConvertCommand=BashCommand(audioConvertArgs)
+        audioConvertCommand.set_timeout(timeout)
         audioConvertCommand.run_command()
         logger.debug(audioConvertCommand.get_data())
         return audioConvertCommand.get_data()
@@ -35,6 +53,7 @@ def videoConverter(item):
     if not exists(item.get_file_path()+'.presform.avi'):
         videoConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),'-vcodec','rawvideo','-acodec','pcm_u24le','-pix_fmt','uyvy422','-vtag','2vuy',item.get_file_path()+".presform.avi"]
         videoConvertCommand=BashCommand(videoConvertArgs)
+        videoConvertCommand.set_timeout(timeout)
         videoConvertCommand.run_command()
         logger.debug(videoConvertCommand.get_data())
         return videoConvertCommand.get_data()
@@ -46,6 +65,7 @@ def imageConverter(item):
     if not exists(item.get_file_path()+'.presform.tif'):
         imageConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),item.get_file_path()+'.presform.tif']
         imageConvertCommand=BashCommand(imageConvertArgs)
+        imageConvertCommand.set_timeout(timeout)
         imageConvertCommand.run_command()
         logger.debug(imageConvertCommand.get_data())
         return imageConvertCommand.get_data()
@@ -60,6 +80,7 @@ def gifConverter(item):
         mkdirCommand.run_command()
         gifConvertArgs=['ffmpeg','-n','-i',item.get_file_path(),item.get_file_path()+'.presform/output%04d.presform.tif']
         gifConvertCommand=BashCommand(gifConvertArgs)
+        gifConvertCommand.set_timeout(timeout)
         gifConvertCommand.run_command()
         logger.debug(gifConvertCommand.get_data())
         return gifConvertCommand.get_data()
@@ -71,6 +92,7 @@ def zipConverter(item):
     if not exists(item.get_file_path()+'.presform.extracted'):
         unzipCommandArgs=['7z','x','-o'+item.get_file_path()+'.presform.extracted',item.get_file_path()]
         unzipCommand=BashCommand(unzipCommandArgs)
+        unzipCommand.set_timeout(timeout)
         unzipCommand.run_command()
         if unzipCommand.get_data()[1].returncode == 0:
             b=Batch(root,item.get_file_path()+'.presform.extracted')
@@ -86,9 +108,11 @@ def officeConverter(item):
         fileName,fileExtension=splitext(item.get_file_path())
         mkdirArgs=['mkdir','-p','/tmp/officeConv']
         mkdirCommand=BashCommand(mkdirArgs)
+        mkdirCommand.set_timeout(timeout)
         mkdirCommand.run_command()
         officeConvertArgs=['/Applications/LibreOffice.app/Contents/MacOS/soffice','--headless','--convert-to','pdf','--outdir','/tmp/officeConv',item.get_file_path()]
         officeConvertCommand=BashCommand(officeConvertArgs)
+        officeConvertCommand.set_timeout(timeout)
         officeConvertCommand.run_command()
         cpCommandArgs=['cp','/tmp/officeConv/'+basename(fileName)+'.pdf',item.get_file_path()+'.presform.pdf']
         cpCommand=BashCommand(cpCommandArgs)
@@ -107,15 +131,19 @@ def xlsConverter(item):
         fileName,fileExtension=splitext(item.get_file_path())
         mkdirArgs=['mkdir','-p','/tmp/officeConv']
         mkdirCommand=BashCommand(mkdirArgs)
+        mkdirCommand.set_timeout(timeout)
         mkdirCommand.run_command()
         officeConvertArgs=['/Applications/LibreOffice.app/Contents/MacOS/soffice','--headless','--convert-to','csv','--outdir','/tmp/officeConv',item.get_file_path()]
         officeConvertCommand=BashCommand(officeConvertArgs)
+        offceCommand.set_timeout(timeout)
         officeConvertCommand.run_command()
         cpCommandArgs=['cp','/tmp/officeConv/'+basename(fileName)+'.csv',item.get_file_path()+'.presform.csv']
         cpCommand=BashCommand(cpCommandArgs)
+        cpCommand.set_timeout(timeout)
         cpCommand.run_command()
         rmCommandArgs=['rm','-r','/tmp/officeConv']
         rmCommand=BashCommand(rmCommandArgs)
+        rmCommand.set_timeout(timeout)
         rmCommand.run_command()
         logger.debug(officeConvertCommand.get_data())
         return officeConvertCommand.get_data()
@@ -128,15 +156,19 @@ def txtConverter(item):
         fileName,fileExtension=splitext(item.get_file_path())
         mkdirArgs=['mkdir','-p','/tmp/officeConv']
         mkdirCommand=BashCommand(mkdirArgs)
+        mkdirCommand.set_timeout(timeout)
         mkdirCommand.run_command()
         officeConvertArgs=['/Applications/LibreOffice.app/Contents/MacOS/soffice','--headless','--convert-to','txt:Text','--outdir','/tmp/officeConv',item.get_file_path()]
         officeConvertCommand=BashCommand(officeConvertArgs)
+        officeConvertCommand.set_timeout(timeout)
         officeConvertCommand.run_command()
         cpCommandArgs=['cp','/tmp/officeConv/'+basename(fileName)+'.txt',item.get_file_path()+'.presform.txt']
         cpCommand=BashCommand(cpCommandArgs)
+        cpCommand.set_timeout(timeout)
         cpCommand.run_command()
         rmCommandArgs=['rm','-r','/tmp/officeConv']
         rmCommand=BashCommand(rmCommandArgs)
+        rmCommand.set_timeout(timeout)
         rmCommand.run_command()
         logger.debug(officeConvertCommand.get_data())
         return officeConvertCommand.get_data()
@@ -190,102 +222,47 @@ def parse(item):
     if item.find_file_extension() in audioExtensions or item.find_file_mime_type() in audioMimes:
         logger.info("Audio extension or mime detected")
         result=audioConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() in officeExtensions or item.find_file_mime_type() in officeMimes:
         logger.info("Office extension or mime detected")
         result=officeConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() == ".xls" or item.find_file_extension() == ".xlsx":
         logger.info("XLS extension detected")
         result=xlsConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() == ".doc" or item.find_file_extension() == ".docx":
         logger.info("DOC extension detected")
         result=txtConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() in videoExtensions or item.find_file_mime_type() in videoMimes:
         logger.info("Video extension or mime detected")
         result=videoConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() in imageExtensions or item.find_file_mime_type() in imageMimes:
         logger.info("Image extension or mime detected")
         result=imageConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() == ".gif":
         logger.info("GIF extension detected")
         result=gifConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() in zipExtensions or item.find_file_mime_type() in zipMimes:
         logger.info("Zip extension or mime detected")
         result=zipConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
+        parseResult(result)
 
     if item.find_file_extension() in htmlExtensions or item.find_file_mime_type() in htmlMimes:
         logger.info("HTML extension or mime detected")
         result=htmlConverter(item)
-        if result[0] == False:
-            logger.warn("Conversion failed!")
-        elif result[0] == None:
-            pass
-        else:
-            logger.debug(str(result))
-            logger.info("Conversion successful")
-    return
+        parseResult(result)
 
 def main():
     # start of parser boilerplate
@@ -318,10 +295,12 @@ def main():
                          \
     )
     parser.add_argument("item", help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
-                        " a type of controlled collection")
+                        "directory path that you need to convert the contents of " + \
+                        " to stable formats")
     parser.add_argument("root",help="Enter the root of the directory path",
                         action="store")
+    parser.add_argument("-t",'--timeout',help="Enter a timeout for conversions in seconds, after which they will fail",
+                        action="store",type=int)
     args = parser.parse_args()
 
     log_format = Formatter( \
@@ -347,6 +326,8 @@ def main():
     itemStack=[]
     global root
     root=args.root
+    global timeout
+    timeout=args.timeout
     try:
         if isdir(args.item):
             b = Batch(root, args.item)
