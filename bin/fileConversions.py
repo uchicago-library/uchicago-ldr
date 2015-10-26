@@ -135,7 +135,7 @@ def xlsConverter(item):
         mkdirCommand.run_command()
         officeConvertArgs=['/Applications/LibreOffice.app/Contents/MacOS/soffice','--headless','--convert-to','csv','--outdir','/tmp/officeConv',item.get_file_path()]
         officeConvertCommand=BashCommand(officeConvertArgs)
-        offceCommand.set_timeout(timeout)
+        officeConvertCommand.set_timeout(timeout)
         officeConvertCommand.run_command()
         cpCommandArgs=['cp','/tmp/officeConv/'+basename(fileName)+'.csv',item.get_file_path()+'.presform.csv']
         cpCommand=BashCommand(cpCommandArgs)
