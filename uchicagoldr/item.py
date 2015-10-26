@@ -177,8 +177,9 @@ class Item(object):
         return self.mimetype
 
     def find_technical_metadata(self):
-        fits_filepath = join(self.filepath,'.fits.xml')
-        if exists(fits_filepath):
+        fits_filepath = self.filepath+'.fits.xml'
+        stif_filepath = self.filepath+'.stif.txt'
+        if exists(fits_filepath) or exists(stif_filepath):
             self.has_technical_md = True
         else:
             pass
