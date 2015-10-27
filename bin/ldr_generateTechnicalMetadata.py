@@ -129,12 +129,12 @@ def main():
                     shahash=item.find_sha256_hash
 
                     with open(item.get_file_path()+'.stif.txt','w') as f:
-                        f.write(str(statCommand.get_data()[1].stdout)+ \
-                                str(mimeCommand.get_data()[1].stdout)+ \
-                                str(fileCommand.get_data()[1].stdout)+ \
-                                "md5: " + item.get_md5() + '\n'+ \
-                                "sha256: " + item.get_sha256() \
-                                )
+                        f.write(statCommand.get_data()[1].stdout.decode(encoding='UTF-8')+ \
+                                mimeCommand.get_data()[1].stdout.decode(encoding='UTF-8')+ \
+                                fileCommand.get_data()[1].stdout.decode(encoding='UTF-8')+ \
+                                "md5: " + item.find_md5_hash() + '\n'+ \
+                                "sha256: " + item.find_sha256_hash() \
+                               )
                     assert(exists(item.get_file_path()+'.stif.txt'))
                     logger.info("STIF generated for: "+item.get_file_path())
                 item.find_technical_metadata()
