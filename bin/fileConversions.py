@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
-from os.path import exists,splitext,basename,isdir,isfile,abspath
+from os.path import exists,splitext,basename,isdir,isfile,abspath,join
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -177,7 +177,19 @@ def txtConverter(item):
         return(None,None)
 
 def htmlConverter(item):
-    return (None,None)
+    if not exists(item.get_file_path()+'.presform.pdf'):
+        originalFilePath=item.get_file_path()
+        originalFileName=item.find_file_name()
+        intermediaryFilePath=originalFilePath+'.intermediary.pdf'
+        wkhtmltopdfArgs=['wkhtmltopdf',item.get_file_path(),intermediaryFilePath]
+        wkhtmltopdfCommand=BashCommand(wkhtmltopdfArgs)
+        wkhtmltopdfCommand.set_timeout(timeout)
+        wkhtmltopdfCommand.run_command()
+        i=Item(intermediaryFilePath,root)
+        itemStack.append(i)
+        return wkhtmltopdfCommand.get_data() 
+    else:
+        return (None,None)
 
 def parse(item):
     #Handy dandy lists
@@ -188,7 +200,7 @@ def parse(item):
     videoExtensions=[".wmv",".vob"]
     videoMimes=["video/quicktime",'video/3gpp','video/mp2p','video/mp4','video/mpeg','video/mpv','video/x-flv','video/x-m4v','video/x-ms-asf','video/x-msvideo']
     imageExtensions=['.jpg','.jpeg','.png','.pct']
-    imageMimes=["image/jpeg","image/x-ms-bmp",'image/x-ms-bmp','image/png','image/x-paintnet','image/x-portable-bitmap','image/x-portable-greymap','text/html']
+    imageMimes=["image/jpeg","image/x-ms-bmp",'image/x-ms-bmp','image/png','image/x-paintnet','image/x-portable-bitmap','image/x-portable-greymap']
     zipExtensions=['.zip','.tar.gz','.7z','.rar']
     zipMimes=['application/x-7z-compressed','application/x-bzip2','application/x-gzip','application/x-rar','application/x-stuffit','application/x-tar','application/zip']
     htmlExtensions=['.html','.htm']
