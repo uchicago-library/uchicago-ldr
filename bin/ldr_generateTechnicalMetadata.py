@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
-from os.path import join, exists
+from os.path import join, exists, abspath
 from subprocess import TimeoutExpired
 
 from uchicagoldr.batch import Batch
@@ -34,7 +34,7 @@ def main():
     # -b sets it to INFO so warnings, errors and generic informative statements
     # will be logged
     parser.add_argument( \
-                         '-b','-verbose',help="set verbose logging",
+                         '-b','-verbose',help="set verbosity for logging to stdout",
                          action='store_const',dest='log_level',
                          const=INFO,default='INFO' \
     )
@@ -50,6 +50,10 @@ def main():
                          '-l','--log_loc',help="save logging to a file",
                          dest="log_loc",
                          \
+    )
+    parser.add_argument( \
+                         '-t','--timeout',help="set a timeout in seconds for any single bash command",
+                         dest='timeout',default=3600,type=int \
     )
     parser.add_argument("item", help="Enter a noid for an accession or a " + \
                         "directory path that you need to validate against" + \
@@ -68,20 +72,21 @@ def main():
     logger = getLogger( \
                         "lib.uchicago.repository.logger" \
     )
+    logger.setLevel(DEBUG)
     ch = StreamHandler()
     ch.setFormatter(log_format)
-    logger.setLevel(args.log_level)
+    ch.setLevel(args.log_level)
+    logger.addHandler(ch)
     if args.log_loc:
         fh = FileHandler(args.log_loc)
         fh.setFormatter(log_format)
         logger.addHandler(fh)
-    logger.addHandler(ch)
     try:
         fitscommand="fits"
         md5command="md5"
         shacommand="sha256"
 
-        b = Batch(args.root, args.item)
+        b = Batch(abspath(args.root), abspath(args.item))
         for item in b.find_items(from_directory=True):
             if ".fits.xml" in item.find_file_name() or ".stif.txt" in item.find_file_name():
                 continue
@@ -93,10 +98,12 @@ def main():
                 logger.info("Attempting technical metadata generation for: "+item.get_file_path())
                 fitsArgs=[fitscommand,'-i',item.get_file_path(),'-o',item.get_file_path()+'.fits.xml']
                 fitsCommand=BashCommand(fitsArgs)
-                fitsCommand.set_timeout(3600)
+                fitsCommand.set_timeout(args.timeout)
                 try:
                     logger.info("Attempting FITS generation for: "+item.get_file_path())
                     result=fitsCommand.run_command()
+                    if isinstance(result[1],Exception):
+                        raise result[1]
                     assert(exists(item.get_file_path()+'.fits.xml'))
                     logger.info("FITS generated for: "+item.get_file_path()) 
                 except TimeoutExpired:
@@ -104,15 +111,15 @@ def main():
                     logger.info("Attempting STIF generation")
                     statArgs=['stat',item.get_file_path()]
                     statCommand=BashCommand(statArgs)
-                    statCommand.set_timeout(3600)
+                    statCommand.set_timeout(args.timeout)
 
                     mimeArgs=['file','-i',item.get_file_path()]
                     mimeCommand=BashCommand(mimeArgs)
-                    mimeCommand.set_timeout(3600)
+                    mimeCommand.set_timeout(args.timeout)
 
                     fileArgs=['file',item.get_file_path()]
                     fileCommand=BashCommand(fileArgs)
-                    fileCommand.set_timeout(3600)
+                    fileCommand.set_timeout(args.timeout)
                     
                     assert(statCommand.run_command()[0])
                     assert(mimeCommand.run_command()[0])
@@ -122,9 +129,9 @@ def main():
                     shahash=item.find_sha256_hash
 
                     with open(item.get_file_path()+'.stif.txt','w') as f:
-                        f.write(statCommand.get_data()[1].stdout+ \
-                                mimeCommand.get_data()[1].stdout+ \
-                                fileCommand.get_data()[1].stdout+ \
+                        f.write(str(statCommand.get_data()[1].stdout)+ \
+                                str(mimeCommand.get_data()[1].stdout)+ \
+                                str(fileCommand.get_data()[1].stdout)+ \
                                 "md5: " + item.get_md5() + '\n'+ \
                                 "sha256: " + item.get_sha256() \
                                 )
