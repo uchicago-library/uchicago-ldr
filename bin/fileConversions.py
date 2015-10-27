@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
-from os.path import exists,splitext,basename,isdir,isfile
+from os.path import exists,splitext,basename,isdir,isfile,abspath
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -94,7 +94,7 @@ def zipConverter(item):
         unzipCommand=BashCommand(unzipCommandArgs)
         unzipCommand.set_timeout(timeout)
         unzipCommand.run_command()
-        if unzipCommand.get_data()[1].returncode == 0:
+        if exists(item.get_file_path()+'.presform.extracted'):
             b=Batch(root,item.get_file_path()+'.presform.extracted')
             for item in b.find_items(from_directory=True):
                 itemStack.append(item)
@@ -325,16 +325,17 @@ def main():
     global itemStack
     itemStack=[]
     global root
-    root=args.root
+    root=abspath(args.root)
+    item_path=abspath(args.item)
     global timeout
     timeout=args.timeout
     try:
-        if isdir(args.item):
-            b = Batch(root, args.item)
+        if isdir(item_path):
+            b = Batch(root, item_path)
             for item in b.find_items(from_directory=True):
                 itemStack.append(item)
-        if isfile(args.item):
-            itemStack.append(Item(args.item,root))
+        if isfile(item_path):
+            itemStack.append(Item(item_path,root))
 
         for item in itemStack:
             logger.info("Parsing "+item.get_file_path())
