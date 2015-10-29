@@ -24,8 +24,6 @@ class ControlTemplate(object):
                 return patternData.labelName
         return False
 
-    
-
 class DigitalObject(Batch):
     controlled = True
     controlTemplate = None
@@ -36,11 +34,7 @@ class DigitalObject(Batch):
         self.identifier = identifier
         self.controlTemplate = controlTemplate
 
-    def __iter__(self):
-        for n in self.files:
-            
-
-    def addFile(self,fObject):
+    def addFile(self, fObject):
         assert isinstance(fObject, File)
         definedPart = self.controlTemplate.validateFilepath \
                       (self.fObject.canonicalPath):
@@ -51,3 +45,5 @@ class DigitalObject(Batch):
             return True
         return False
 
+    def removeFile(self, fObject):
+        return False

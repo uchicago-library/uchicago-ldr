@@ -34,7 +34,7 @@ class Checksum(object):
         self.digestType = 'md5'
         self.digestValue = hash.hexdigest()             
         return True
-    
+
 class File(object):
     mimeType = None
     filePath = namedtuple("fixityDigest","digestType digestValue")
@@ -68,7 +68,7 @@ class File(object):
         return True
     
     def calculateMimeType(self):
-        self.mimeType = from_file(self.filpeath, mimetype=True)
+        self.mimeType = from_file(self.filpath, mimetype=True)
 
     def calculateCanonicalPath(self, extraneousPathPart):
         path = abspath(self.filepath)
