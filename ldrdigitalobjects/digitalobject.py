@@ -31,6 +31,7 @@ class DigitalObject(Batch):
 
     def __init__(self, identifier, template):
         assert isinstance(template, ControlTemplate)
+        assert isinstance(identifier, str)
         self.identifier = identifier
         self.controlTemplate = controlTemplate
 
@@ -47,3 +48,19 @@ class DigitalObject(Batch):
 
     def removeFile(self, fObject):
         return False
+
+    def removeControlTemplate(self):
+        self.controlTemplate = None
+
+    def findFileByPath(self, path):
+        for f in self.files:
+            if f.partFile.canonicalPath ==  path:
+                return f
+        return False
+
+    def findFileByPartName(self, partName):
+        for f in self.files:
+            if f.partLabel == partName:
+                return f
+        return False
+
