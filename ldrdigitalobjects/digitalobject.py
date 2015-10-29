@@ -11,16 +11,18 @@ class ControlTemplate(object):
         self.pattern = re_compile(pattern)
         self.patternLabels = []
 
-    def addLabel(self, labelName, labelPosition):
+    def addLabel(self, labelName, labelPosition, labelPattern):
         assert isinstance(labelName, str)
         assert isinstance(labelPosition, str)
-        o = namedtuple("identifierPart","label placement") \
-            (labelName,labelPosition)
+        o = namedtuple("identifierPart","label placement pattern") \
+            (labelName, labelPosition, labelPattern)
         return o
 
     def validateFilePath(self, filePath):
-        if self.pattern:
-            pass
+        for patternData in self.patternLabels:
+            if re_compile(patternData.pattern).match(filePath):
+                return patternData.labelName
+        return False
 
 class DigitalObject(Batch):
     controlled = True
