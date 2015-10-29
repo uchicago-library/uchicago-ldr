@@ -1,5 +1,7 @@
 build/*
 ldrdigitalobjects/*pyc
+ldrdigitalobjects/#*
+ldrdigitalobjects/.#*
 uchicagoldr/__pycache__/*
 bin/__pycache__/*
 uchicagoldr/*pyc
