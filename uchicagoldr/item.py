@@ -24,25 +24,17 @@ class Item(object):
     canonical_filepath = ""
     can_read = False
     has_technical_md = False
-    in_batch = None
     
-    def __init__(self, path, root,in_batch=None):
+    def __init__(self, path, root):
         self.root_path = root
         self.filepath = join(root, path)
         self.set_readability(self.test_readability())
-        self.set_batch(in_batch)
 
     def test_readability(self):
         if access(self.filepath, R_OK):
             return True
         else:
             return False
-
-    def get_batch(self):
-        return self.in_batch
-
-    def set_batch(self,newbatch):
-        self.in_batch=newbatch
 
     def get_root_path(self):
         return self.root_path

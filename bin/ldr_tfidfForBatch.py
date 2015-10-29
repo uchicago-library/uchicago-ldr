@@ -89,10 +89,7 @@ def main():
         if textDocs.validate_items():
             logger.info("Getting document term indices")
             tote=len(textDocs.get_items())
-            i=0
             for item in textDocs.get_items():
-                i+=1
-                print(str(i)+"/"+str(tote))
                 item.set_raw_string(item.find_raw_string())
                 item.set_index(item.find_index(purge_raw=True,scrub_text=True))
             logger.info("Getting IDFs")
