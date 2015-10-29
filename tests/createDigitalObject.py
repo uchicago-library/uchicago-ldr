@@ -1,9 +1,13 @@
 
 from ldrdigitalobjects.files import XML, Binary, Textual, File
-from ldrdigitalobjects.digitalobject import DigitalObject
-    
+from ldrdigitalobjects.digitalobject import ControlTemplate, DigitalObject
+from ldrdigitalobjects.batch import Batch
+
 if __name__ == "__main__":
-    d = DigitalObject("foo")
+    b = Batch("bar")
+    t = ControlTemplate("limb-campub")
+
+    d = DigitalObject("first_object",t)
     
     x = XML("./test.xml", '/home/tdanstrom/src/apps/')
     b = Binary("./foo.jpg", '/home/tdanstrom/src/apps/')
@@ -18,7 +22,7 @@ if __name__ == "__main__":
     d.addFile(f)
     d.addFile(e)
     d.addFile(g)
-    print(d.controlled)
+
     for n in d:
         print(n.filepath)
         print(n.calculateCanonicalPath('/home/tdanstrom/src/apps'))

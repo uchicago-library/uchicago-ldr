@@ -18,6 +18,5 @@ setup(
         "Operating System :: Unix",
         "Topic :: Software Development :: Libraries :: Python Modules",
         ],
-    install_requires = ['python-magic == 0.4.6',
-                        'SQLAlchemy >= 1.0.8'],
+    install_requires = ['python-magic == 0.4.6'],
     long_description = open('README.txt').read())

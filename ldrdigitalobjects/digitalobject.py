@@ -1,17 +1,18 @@
 
 from collections import namedtuple
 from files import File
+from batch import Batch
 from re import compile as re_compile
 
 class ControlTemplate(object):
     pattern = re_compile("(.*)")
     patternLabels = [namedtuple("identifierPart","label placement")]
 
-    def __init__(self, pattern, patternLabels):
-        self.pattern = re_compile(pattern)
+    def __init__(self,idValue):
+        self.identifier = idValue
         self.patternLabels = []
 
-    def addLabel(self, labelName, labelPosition, labelPattern):
+    def addPart(self, labelName, labelPosition, labelPattern):
         assert isinstance(labelName, str)
         assert isinstance(labelPosition, str)
         o = namedtuple("identifierPart","label placement pattern") \
@@ -24,21 +25,42 @@ class ControlTemplate(object):
                 return patternData.labelName
         return False
 
-class DigitalObject(Batch):
-    controlled = True
+class Item(object):
+    item = None
+
+    def __init__(self,item):
+        assert (isinstance(item, DigitalObject) or isinstance(item, File))
+        self.item = item
+
+    def getType(self):
+        return type(self.item).__name__
+
+    def getCanonicalPath(self):
+        if isinstance(self.item, File):
+            return self.item.canonicalPath
+        return None
+
+    def get
+
+class DigitalObject(object):
     controlTemplate = None
     identifier = None
+    description = ""
+    items = []
 
     def __init__(self, identifier, template):
         assert isinstance(template, ControlTemplate)
         assert isinstance(identifier, str)
         self.identifier = identifier
-        self.controlTemplate = controlTemplate
+        self.controlTemplate = template
 
-    def addFile(self, fObject):
-        assert isinstance(fObject, File)
+    def describe(self, text):
+        assert isinstance(text, str)
+        self.describe = text
+
+    def addItem(self, item):
         definedPart = self.controlTemplate.validateFilepath \
-                      (self.fObject.canonicalPath):
+                      (self.fObject.canonicalPath)
         if definedPart:
             dopart = namedtuple("digitalObjectPart","partLabel partFile") \
                      (definedPart, fObject)
@@ -46,7 +68,7 @@ class DigitalObject(Batch):
             return True
         return False
 
-    def removeFile(self, fObject):
+    def removeItem(self, fObject):
         return False
 
     def removeControlTemplate(self):
