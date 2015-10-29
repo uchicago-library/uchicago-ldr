@@ -18,9 +18,12 @@ from operator import itemgetter
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
-from uchicagoldr.textdocument import TextDocument
-from uchicagoldr.textbatch import TextBatch
+from uchicagoldr.textitem import TextItem
+from uchicagoldr.textbatch2 import TextBatch
 from uchicagoldr.textprocessingfunctions import *
+
+def metaPrune(termList):
+    return stopTerms(noDigits(percChar(lowerCase(termList))))
 
 def main():
     # start of parser boilerplate
@@ -82,35 +85,36 @@ def main():
         textDocs=TextBatch(args.item,args.root)
         for item in b.find_items(from_directory=True):
             if ".presform.txt" in item.find_file_name():
-                textDoc=TextDocument(item.get_file_path(),item.get_root_path())
+                textDoc=TextItem(item.get_file_path(),item.get_root_path())
                 textDocs.add_item(textDoc)
         if textDocs.validate_items():
-            logger.info("Beep boop computing TFIDFs")
-            logger.info("Finding terms")
-            textDocs.set_terms(pruneTerms(textDocs.find_terms()))
-            logger.info("Finding unique terms")
-            textDocs.set_unique_terms(textDocs.find_unique_terms())
-            logger.info("Finding term counts")
-            textDocs.set_term_counts(textDocs.find_term_counts())
-            logger.info("Finding doc counts")
+            logger.info("Getting document term indices")
+            tote=len(textDocs.get_items())
+            i=0
+            for item in textDocs.get_items():
+                i+=1
+                print(str(i)+"/"+str(tote))
+                item.set_raw_string(item.find_raw_string())
+                item.set_term_pruning_function(metaPrune)
+                item.set_index(item.find_index(purge_raw=True))
+            logger.info("Getting IDFs")
             textDocs.set_doc_counts(textDocs.find_doc_counts())
-            logger.info("Finding IDFs")
             textDocs.set_idfs(textDocs.find_idfs())
-            logger.info("Finding TFIDFs")
-            textDocs.set_item_tf_idfs(textDocs.find_item_tf_idfs())
-            for key in textDocs.get_item_tf_idfs():
+            logger.info("Computing TFIDFs")
+            textDocs.set_tf_idfs(textDocs.find_tf_idfs())
+
+            for key in textDocs.get_tf_idfs():
                 print(key)
                 tfidfs=[]
-                for entry in textDocs.get_item_tf_idfs()[key]:
-                    tfidfs.append((entry,textDocs.get_item_tf_idfs()[key][entry]))
+                for entry in textDocs.get_tf_idfs()[key]:
+                    tfidfs.append((entry,textDocs.get_tf_idfs()[key][entry]))
                 tfidfs=sorted(tfidfs,key=lambda x: x[1],reverse=True)
                 printFirstX=9
                 firstX=tfidfs[0:printFirstX]
                 justTerms=[]
                 for entry in firstX:
                     justTerms.append(entry[0]) 
-        #        print(",".join(justTerms)+"\n")
-                print(firstX)
+                print(",".join(justTerms)+"\n")
             
         return 0
     except KeyboardInterrupt:

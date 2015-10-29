@@ -95,7 +95,7 @@ def main():
         if textDocs.validate_items():
             logger.info("Beep boop computing TFIDFs")
             logger.info("Finding terms")
-            textDocs.set_terms(pruneTerms(textDocs.find_terms()))
+            textDocs.set_terms(textDocs.find_terms())
             logger.info("Finding unique terms")
             textDocs.set_unique_terms(textDocs.find_unique_terms())
             logger.info("Finding term counts")
@@ -148,7 +148,7 @@ def main():
         if checkTextBatch.validate_items():
             logger.info("Checking documents against VSM")
             logger.info("Getting batch terms")
-            checkTextBatch.set_terms(pruneTerms(checkTextBatch.find_terms(purge_raw=True)))
+            checkTextBatch.set_terms(checkTextBatch.find_terms(purge_raw=True))
             checkTextBatch.set_unique_terms(checkTextBatch.find_unique_terms())
             logger.info("Getting batch term counts")
             checkTextBatch.set_doc_counts(checkTextBatch.find_doc_counts())

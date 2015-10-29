@@ -1,7 +1,7 @@
 from collections import Counter
 
 def pruneTerms(terms):
-    newTerms=minOccurence(minLength(maxLength(percChar(stopTerms(noDigits(terms))))))
+    newTerms=minOccurence(minLength(maxLength(percChar(stopTerms(noDigits(lowerCase(terms)))))))
     return newTerms
 
 def stopTerms(terms,stopList=None):
@@ -15,13 +15,20 @@ def stopTerms(terms,stopList=None):
         newTerms.append(term)
     return newTerms
 
+def lowerCase(terms):
+    newTerms=[]
+    for term in terms:
+        newTerms.append(term.lower())
+    return newTerms
+
 def percChar(terms,percent=51):
     newTerms=[]
     for term in terms:
-        percChar=sum(c.isalpha() for c in term)/float(len(term))
-        if percChar < (percent/100):
-            continue
-        newTerms.append(term)
+        if len(term)>0:
+            percChar=sum(c.isalpha() for c in term)/float(len(term))
+            if percChar < (percent/100):
+                continue
+            newTerms.append(term)
     return newTerms
 
 def noDigits(terms):
