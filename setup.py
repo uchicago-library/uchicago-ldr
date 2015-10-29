@@ -5,7 +5,7 @@ setup(
     version = '1.0.0',
     author = "Tyler Danstrom,Brian Balsamo",
     author_email = "tdanstrom@uchicago.edu,balsamo@uchicago.edu",
-    packages = ['uchicagoldr'],
+    packages = ['uchicagoldr','ldrdigitalobjects'],
     description = """\
     A set of base classes for interacting with University of Chicago library 
     digital repository objects

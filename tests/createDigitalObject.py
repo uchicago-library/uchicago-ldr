@@ -1,43 +1,6 @@
 
-from files import XML, Binary, Textual, File
-from digitalobject import DigitalObject
-
-# class DigitalObject(object):
-#     controlled = False
-#     controlTemplate = None
-#     identifier = None
-#     files = set([])
-
-#     def __iter__(self):
-#         for i in self.files:
-#             yield i
-        
-#     def __init__(self, idValue):
-#         self.identifier = idValue
-
-#     def addFile(self,fObject):
-#         assert isinstance(fObject, File)
-#         self.files.add(fObject)
-
-#     def removeFile(self, fObject):
-#         assert isinstance(fObject, File)
-#         try:
-#             self.files.remove(fObject)
-#         except KeyError:
-#             return False
-#         return True
-
-#     def __repr__(self):
-#         prefix = "controlled object " if self.controlled \
-#                  else "uncontrolled object "
-#         return "<" + prefix + DigitalObject + self.identifier + " has " + \
-#             str(len(self.files)) + " files>"
-
-#     def __str__(self):
-#         prefix = "controlled object " if self.controlled else "uncontrolled "
-#         suffix = " file" if len(self.files) == 1 else " files"
-#         return prefix + self.identifier + " has " + str(len(self.files)) + \
-#             suffix
+from ldrdigitalobjects.files import XML, Binary, Textual, File
+from ldrdigitalobjects.digitalobject import DigitalObject
     
 if __name__ == "__main__":
     d = DigitalObject("foo")

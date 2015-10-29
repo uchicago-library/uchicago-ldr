@@ -18,11 +18,10 @@ class DigitalObject(object):
     def add_representation(self, file_object):
         assert isinstance(file_object, Item)
         if self.find_a_representation(file_object):
-            None
+            return None
         else:
-            new = Representation(file_object)
-            self.representations.append(new)
-        return new
+            self.representations.append(file_object)
+        return True
     
     def find_a_page(self, page_number):
         for n in self.pages:

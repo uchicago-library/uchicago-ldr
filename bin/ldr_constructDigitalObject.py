@@ -178,50 +178,9 @@ def main():
                     page_number = int(groups[int(page_number_position[0])].lstrip('0'))
                     part_type = groups[int(part_type_position)]
                     page = obj.add_page(item, page_number, part_type)
-                    
-            
-
-                # identifier_parts = [int(args.object_mapping.get('Object',
-                #                                                 x)[0])
-                #                     for x in args. \
-                #                     object_mapping.get('Object',
-                #                                     'identifier').split(',')]
-                # identifier = construct_identifier(identifier_parts, t)
-                # existing_object = does_object_exist(identifier, all_objects)
-                # if existing_object:
-                #     the_object = existing_object
-                # else:
-                #     the_object = DigitalObject(identifier)
-                #     all_objects.append(the_object)
-                # if search_pattern.status == True:
-
-                #     c = validate_filename_id_placement(t,
-                #             [args.object_mapping.get('Object', l)
-                #              for l in args.object_mapping.get('Object',
-                #                                 'identifier').split(',')])
-                #     if c:
-                #         the_object.add_object_part(item, args.object_mapping)
-                #     else:
-                #         logger.error("there are inconsistencies in the " + \
-                #                      "naming of the file {path}". \
-                #                      format(path = item.filepath))
-
-                #     groups = page_search_pattern.data.groups()
-                #     c = validate_filename_id_placement(t,
-                #             [args.page_mapping.get('Object', l)
-                #              for l in args.object_mapping.get('Object',
-                #                                 'identifier').split(',')])
-                #     if c:
-                #         the_object.add_page(item, args.page_mapping)
-                #     else:
-                #         logger.error("there are inconsistencies in the " + \
-                #                      "naming of the file {path}". \
-                #                      format(path = item.filepath))
             else:
                 logger.error("{path} is invalid". \
                              format(path = item.filepath))
-
-
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
