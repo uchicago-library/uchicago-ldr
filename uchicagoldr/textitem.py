@@ -2,6 +2,7 @@ from re import escape,split
 from collections import Counter
 
 from uchicagoldr.item import Item
+from uchicagoldr.textprocessingfunctions import *
 
 class TextItem(Item):
 
@@ -15,7 +16,7 @@ class TextItem(Item):
     def find_raw_string(self):
         with open(self.filepath,'r',errors='replace') as f:
             raw_string=f.read()
-        return raw_string.lower()
+        return raw_string
 
     def get_raw_string(self):
         return self.raw_string
@@ -23,21 +24,15 @@ class TextItem(Item):
     def set_raw_string(self,newString):
         self.raw_string=newString
 
-    def set_term_pruning_function(self,newFunction):
-        self.term_pruning_function=newFunction
-
-    def get_term_pruning_function(self):
-        return self.term_pruning_function
-
-    def find_index(self,purge_raw=False,term_map=None):
+    def find_index(self,purge_raw=False,term_map=None,scrub_text=False):
         assert(self.get_raw_string() != None)
         fileString=self.get_raw_string()
         regexPattern = '|'.join(map(escape, [" ","\n",".",",",";","'","-","\t","?","!",'(',')','[',']''\\',":","\"","\'",'“','—',"‘","’","”","#","…","/","|","*"]))
         termList=split(regexPattern,fileString)
+        if scrub_text:
+            termList=minOccurence(stopTerms(percChar(maxLength(minLength(noDigits(lowerCase(termList)))))))
         if purge_raw:
             self.set_raw_string(None)
-        if self.term_pruning_function is not None:
-            self.term_pruning_function(termList)
         if term_map != None:
             i=0
             for term in termList:

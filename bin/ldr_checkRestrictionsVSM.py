@@ -15,11 +15,12 @@ from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
 from operator import itemgetter
-from math import log
+from os.path import abspath
+from operator import itemgetter
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
-from uchicagoldr.textdocument import TextDocument
+from uchicagoldr.textitem import TextItem
 from uchicagoldr.textbatch import TextBatch
 from uchicagoldr.textprocessingfunctions import pruneTerms
 
@@ -86,95 +87,63 @@ def main():
         logger.addHandler(fh)
     logger.addHandler(ch)
     try:
+        args.restritem=abspath(args.restritem)
+        args.restrroot=abspath(args.restrroot)
+        args.item=abspath(args.item)
+        args.root=abspath(args.root)
+
         b = Batch(args.restrroot, args.restritem)
-        textDocs=TextBatch(args.restritem,args.restrroot)
+        restrDocs=TextBatch(args.restritem,args.restrroot)
         for item in b.find_items(from_directory=True):
             if ".presform.txt" in item.find_file_name():
-                textDoc=TextDocument(item.get_file_path(),item.get_root_path())
-                textDocs.add_item(textDoc)
-        if textDocs.validate_items():
-            logger.info("Beep boop computing TFIDFs")
-            logger.info("Finding terms")
-            textDocs.set_terms(textDocs.find_terms())
-            logger.info("Finding unique terms")
-            textDocs.set_unique_terms(textDocs.find_unique_terms())
-            logger.info("Finding term counts")
-            textDocs.set_term_counts(textDocs.find_term_counts())
-            logger.info("Finding doc counts")
-            textDocs.set_doc_counts(textDocs.find_doc_counts())
-            #textDocs.set_idfs(textDocs.find_idfs())
+                textDoc=TextItem(item.get_file_path(),item.get_root_path())
+                restrDocs.add_item(textDoc)
+        if restrDocs.validate_items():
+            logger.info("Generating language model from provided document set.")
+            logger.info("Getting document term indices")
+            for item in restrDocs.get_items():
+                item.set_raw_string(item.find_raw_string())
+                item.set_index(item.find_index(purge_raw=True))
+            logger.info("Generating corpus term index")
+            restrDocs.set_term_index(restrDocs.find_term_index())
+            logger.info("Getting iIDFs")
+            restrDocs.set_doc_counts(restrDocs.find_doc_counts())
+            restrDocs.set_iIdfs(restrDocs.find_iIdfs())
+            logger.info("Computing Language Model")
+            restrDocs.set_language_model(restrDocs.find_language_model())
+            logger.info("Computing LM VSM")
+            restrDocs.set_vector_space_model(restrDocs.find_vector_space_model())
 
-            #Invert the idfs for the language model, in order to reward common terms and penalize unique terms. Lets see how this works out...
-            #logger.info("Inverting IDFs in the LM.")
-            #for term in textDocs.get_idfs():
-            #    textDocs.get_idfs()[term]=1/textDocs.get_idfs()[term]
-
-            #The same idea as above, but manually calculating them by taking the recip of the inner fraction
-            #invertedIDF={}
-            #for term in textDocs.get_unique_terms():
-            #    iIDF=log(1+(textDocs.get_doc_counts()[term]/len(textDocs.get_items())))
-            #    invertedIDF[term]=iIDF
-            #textDocs.set_idfs(invertedIDF)
-
-            #Does this work better without taking the log?
-            #Maybe?
-            invertedIDF={}
-            for term in textDocs.get_unique_terms():
-                iIDF=1+(textDocs.get_doc_counts()[term]/len(textDocs.get_items()))
-                invertedIDF[term]=iIDF
-            textDocs.set_idfs(invertedIDF)
-
-
-#            logger.info("Setting mock idf of 1 for each term")
-#            mockIDFS={}
-#            for term in textDocs.get_unique_terms():
-#                mockIDFS[term]=1
-#            textDocs.set_idfs(mockIDFS)
-
-            logger.info("Finding TFIDFs")
-            textDocs.set_batch_tf_idfs(textDocs.find_batch_tf_idfs())
-            logger.info("Generating restrictions VSM")
-            textDocs.set_vector_space_model(textDocs.find_vector_space_model())
-            restrictionsVSM=textDocs.get_vector_space_model()
-        
-        logger.info("Building batch to check")
-        checkb = Batch(args.root,args.item)
-        sims=[]
-        checkTextBatch=TextBatch(args.item,args.root)
-        for item in checkb.find_items(from_directory=True):
+        c=Batch(args.root,args.item)
+        Docs=TextBatch(args.root,args.item)
+        for item in c.find_items(from_directory=True):
             if ".presform.txt" in item.find_file_name():
-                textDoc=TextDocument(item.get_file_path(),item.get_root_path(),in_batch=checkTextBatch)
-                checkTextBatch.add_item(textDoc)
-        if checkTextBatch.validate_items():
-            logger.info("Checking documents against VSM")
-            logger.info("Getting batch terms")
-            checkTextBatch.set_terms(checkTextBatch.find_terms(purge_raw=True))
-            checkTextBatch.set_unique_terms(checkTextBatch.find_unique_terms())
-            logger.info("Getting batch term counts")
-            checkTextBatch.set_doc_counts(checkTextBatch.find_doc_counts())
-            logger.info("Getting batch idfs")
-            checkTextBatch.set_idfs(checkTextBatch.find_idfs())
-            #logger.info("Setting mock idf of 1 for each term.")
-            #mockIDFS={}
-            #for term in checkTextBatch.get_unique_terms():
-            #    mockIDFS[term]=1
-            #checkTextBatch.set_idfs(mockIDFS)
-            logger.info("Setting item tfidfs for the batch")
-            checkTextBatch.set_item_tf_idfs(checkTextBatch.find_item_tf_idfs())
-            rels={}
-            logger.info("Looping through all the items getting similarity metrics")
-            for item in checkTextBatch:
-                item.set_tf_idfs(item.find_tf_idfs())
-                item.set_vector_space_model(item.find_vector_space_model())
-                path=item.get_file_path()
-                rel=textDocs.find_similarity(item.get_vector_space_model())
-                rels[path]=rel
-            logger.info("Sorting by similarity metrics")
-            sortedrels = sorted(rels.items(), key=itemgetter(1))
-            first10=sortedrels[0:10]
-            for thing in sortedrels:
-                print(thing)
+                textDoc=TextItem(item.get_file_path(),item.get_root_path())
+                Docs.add_item(textDoc)
+        if Docs.validate_items():
+            logger.info("Generating TFIDF models for each document in the batch.")
+            logger.info("Getting document term indices")
+            for item in Docs.get_items():
+                item.set_raw_string(item.find_raw_string())
+                item.set_index(item.find_index(purge_raw=True))
+            logger.info("Getting IDFs")
+            Docs.set_doc_counts(Docs.find_doc_counts())
+            Docs.set_idfs(Docs.find_idfs())
+            logger.info("Computing TFIDFs")
+            Docs.set_tf_idfs(Docs.find_tf_idfs())
+            logger.info("Generating document vector space models.")
+            Docs.set_document_vector_space_models(Docs.find_document_vector_space_models())
             
+            logger.info("Computing similarity metrics.")
+            
+            rels=[]
+            for document in Docs.get_document_vector_space_models():
+                rels.append((document,restrDocs.find_similarity(Docs.get_document_vector_space_models()[document])))
+            logger.info("Sorting similarity metrics for output")
+            rels=sorted(rels,key=itemgetter(1))
+            for entry in rels:
+                print(entry[0]+": "+str(entry[1]))
+
             
         return 0
     except KeyboardInterrupt:
