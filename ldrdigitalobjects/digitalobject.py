@@ -24,6 +24,8 @@ class ControlTemplate(object):
                 return patternData.labelName
         return False
 
+    
+
 class DigitalObject(Batch):
     controlled = True
     controlTemplate = None
@@ -34,10 +36,18 @@ class DigitalObject(Batch):
         self.identifier = identifier
         self.controlTemplate = controlTemplate
 
+    def __iter__(self):
+        for n in self.files:
+            
+
     def addFile(self,fObject):
         assert isinstance(fObject, File)
-        if self.controlTemplate.validateFilepath(self.fObject.canonicalPath):
-            self.files.add(fObject)
+        definedPart = self.controlTemplate.validateFilepath \
+                      (self.fObject.canonicalPath):
+        if definedPart:
+            dopart = namedtuple("digitalObjectPart","partLabel partFile") \
+                     (definedPart, fObject)
+            self.files.add(dopart)
             return True
         return False
 
