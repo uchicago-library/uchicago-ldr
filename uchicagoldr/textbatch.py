@@ -40,6 +40,17 @@ class TextBatch(Batch):
         assert(isinstance(newIndex,Counter))
         self.term_index=newIndex
 
+    def get_term_map(self):
+        return self.term_map
+
+    def set_term_map(self,new_term_map):
+        assert(isinstance(new_term_map,dict))
+        self.term_map=new_term_map
+
+    def rev_term_map(self):
+        rev_map = dict((v,k) for k,v in self.term_map.items())
+        self.term_map=rev_map
+
     def find_doc_counts(self):
         counts=Counter()
         for item in self.get_items():
@@ -71,8 +82,11 @@ class TextBatch(Batch):
     def find_iIdfs(self):
         termIIDFs={}
         for term in self.find_doc_counts():
-            IIDF=1+(self.get_doc_counts()[term]/len(self.get_items()))
-            termIIDFs[term]=IIDF
+            #IIDF=1+(self.get_doc_counts()[term]/len(self.get_items()))
+            termIIDFs[term]=self.get_doc_counts()[term]
+#            termIIDFs[term]=1
+#            termIIDFs[term]=log(self.get_doc_counts()[term])
+#            termIIDFs[term]=self.get_doc_counts()[term]**2
         return termIIDFs
 
     def get_iIdfs(self):

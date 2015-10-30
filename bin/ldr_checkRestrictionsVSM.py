@@ -22,7 +22,6 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.textitem import TextItem
 from uchicagoldr.textbatch import TextBatch
-from uchicagoldr.textprocessingfunctions import pruneTerms
 
 def main():
     # start of parser boilerplate
@@ -101,9 +100,13 @@ def main():
         if restrDocs.validate_items():
             logger.info("Generating language model from provided document set.")
             logger.info("Getting document term indices")
+            term_map={}
             for item in restrDocs.get_items():
                 item.set_raw_string(item.find_raw_string())
-                item.set_index(item.find_index(purge_raw=True))
+                indexOut=item.find_index(purge_raw=True,scrub_text=False,stem=False,term_map=term_map)
+                item.set_index(indexOut[0])
+                term_map.update(indexOut[1])
+            restrDocs.set_term_map(term_map)
             logger.info("Generating corpus term index")
             restrDocs.set_term_index(restrDocs.find_term_index())
             logger.info("Getting iIDFs")
@@ -123,9 +126,15 @@ def main():
         if Docs.validate_items():
             logger.info("Generating TFIDF models for each document in the batch.")
             logger.info("Getting document term indices")
+            tote=len(Docs.get_items())
+            i=0
             for item in Docs.get_items():
+                i+=1
+                print("\r"+str(i)+"/"+str(tote)+" - "+item.get_file_path(),end="")
                 item.set_raw_string(item.find_raw_string())
-                item.set_index(item.find_index(purge_raw=True))
+                indexOut=item.find_index(purge_raw=True,scrub_text=False,stem=False,term_map=term_map,only_mapped=True)
+                item.set_index(indexOut[0])
+            print()
             logger.info("Getting IDFs")
             Docs.set_doc_counts(Docs.find_doc_counts())
             Docs.set_idfs(Docs.find_idfs())

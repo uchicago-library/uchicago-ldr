@@ -88,15 +88,19 @@ def main():
                 textDocs.add_item(textDoc)
         if textDocs.validate_items():
             logger.info("Getting document term indices")
-            tote=len(textDocs.get_items())
+            term_map={}
             for item in textDocs.get_items():
                 item.set_raw_string(item.find_raw_string())
-                item.set_index(item.find_index(purge_raw=True,scrub_text=True))
+                indexOut=item.find_index(purge_raw=True,scrub_text=True,term_map=term_map)
+                item.set_index(indexOut[0])
+                term_map.update(indexOut[1])
+            textDocs.set_term_map(term_map)
             logger.info("Getting IDFs")
             textDocs.set_doc_counts(textDocs.find_doc_counts())
             textDocs.set_idfs(textDocs.find_idfs())
             logger.info("Computing TFIDFs")
             textDocs.set_tf_idfs(textDocs.find_tf_idfs())
+            textDocs.rev_term_map()
 
             for key in textDocs.get_tf_idfs():
                 print(key)
@@ -108,7 +112,7 @@ def main():
                 firstX=tfidfs[0:printFirstX]
                 justTerms=[]
                 for entry in firstX:
-                    justTerms.append(entry[0]) 
+                    justTerms.append(textDocs.get_term_map()[entry[0]])
                 print(",".join(justTerms)+"\n")
             
         return 0

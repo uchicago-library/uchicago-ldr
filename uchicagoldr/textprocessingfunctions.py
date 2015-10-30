@@ -1,7 +1,15 @@
 from collections import Counter
 
+from stemming.porter2 import stem
+
 def pruneTerms(terms):
     newTerms=minOccurence(minLength(maxLength(percChar(stopTerms(noDigits(lowerCase(terms)))))))
+    return newTerms
+
+def stemTerms(terms):
+    newTerms=[]
+    for term in terms:
+        newTerms.append(stem(term))
     return newTerms
 
 def stopTerms(terms,stopList=None):
@@ -57,10 +65,9 @@ def minLength(terms,minLength=2):
 
 def minOccurence(terms,minOccurences=2):
     newTerms=[]
-    termsSeen=Counter()
+    termsSeen=Counter(terms)
     for term in terms:
         if termsSeen[term] < minOccurences:
-            termsSeen[term]+=1
             continue
         newTerms.append(term)
     return newTerms
