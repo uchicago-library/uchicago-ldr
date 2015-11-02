@@ -75,6 +75,8 @@ def main():
     parser.add_argument("prefix",help="The prefix of the containing folder on disk",
                         action='store'
     )
+    parser.add_argument("--rehash",help="Disregard any existing previously generated hashes, recreate them on this run"
+    )
     args = parser.parse_args()
     log_format = Formatter( \
                             "[%(levelname)s] %(asctime)s  " + \
@@ -179,9 +181,10 @@ def main():
         if exists(join(destinationAdminFolder,'fixityFromOrigin.txt')):
             with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'r') as f:
                 for line in f.readlines():
-                    splitLine=line.split('\t')
-                    if splitLine[1] != "ERROR":
-                        existingOriginalFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
+                    if not args.rehash:
+                        splitLine=line.split('\t')
+                        if splitLine[1] != "ERROR":
+                            existingOriginalFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
         with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'a') as f:
             for item in originalFiles.find_items(from_directory=True):
                 if item.test_readability():
@@ -204,10 +207,11 @@ def main():
         logger.info("Hashing copied files.")
         if exists(join(destinationAdminFolder,'fixityInStaging.txt')):
             with open(join(destinationAdminFolder,'fixityInStaging.txt'),'r') as f:
-                for line in f.readlines():
-                    splitLine=line.split('\t')
-                    if splitLine[1] != "ERROR":
-                        existingMovedFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
+                if not args.rehash:
+                    for line in f.readlines():
+                        splitLine=line.split('\t')
+                        if splitLine[1] != "ERROR":
+                            existingMovedFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
         with open(join(destinationAdminFolder,'fixityInStaging.txt'),'a') as f:
             for item in movedFiles.find_items(from_directory=True):
                 if item.test_readability():
