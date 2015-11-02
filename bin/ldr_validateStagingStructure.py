@@ -80,22 +80,41 @@ def main():
 #        pathNoRoot=relpath(args.item,start=args.root)
         logger.info("Checking the ARK.")
         ark=relpath(args.item,start=args.root)
-        if not re_compile('\w{13}').match(ark):
-            logger.warn(ark+" doesn't look like a valid ARK!"
+        print(ark)
+        print(re_compile('\w{13}').match(ark))
+        if not re_compile('^\w{13}$').match(ark):
+            logger.warn(ark+" doesn't look like a valid ARK!")
+        else:
+            print("ark looks good")
 
         logger.info("Checking ARK directory")
         if len(listdir(args.item)) > 1:
             logger.warn("It appears as though there is more than one thing in the ARK directory!")
             logger.warn("Directory contents: "+listdir(args.item))
 
-        eadSuffix=listdir(args.item)[1]
+        logger.info("Checking the EAD ID.")
+        eadSuffix=listdir(args.item)[0]
         eadPath=join(args.item,eadSuffix)
         if eadSuffix != eadSuffix.upper():
             logger.warn("Your EAD suffix isn't capitalized!")
             logger.warn("EAD Suffix: "+eadSuffix)
 
+        logger.info("Checking the EAD ID Directory.")
         if len(listdir(eadPath)) > 1:
             logger.warn("It appears as though there is more than one thing in your EAD directory!")
+            logger.warn("Directory contents: "+listdir(eadPath))
+
+        accNo=listdir(eadPath)[0]
+        accNoPath=join(eadPath,accNo)
+
+        logger.info("Checking the accession number")
+        pattern=re_compile('^\d{4}-\d{3}$')
+        if not pattern.match(accNo):
+            logger.warn('Your accession number doesn\'t appear to be valid.')
+            loggern.warn('Accession Number: '+accNo)
+
+
+
 
 
         return 0
