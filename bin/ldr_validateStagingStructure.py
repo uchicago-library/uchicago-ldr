@@ -86,7 +86,8 @@ def main():
         logger.info("Checking ARK directory")
         if len(listdir(args.item)) > 1:
             logger.warn("It appears as though there is more than one thing in the ARK directory!")
-            logger.warn("Directory contents: "+listdir(args.item))
+            logger.warn("Directory contents: "+",".join(listdir(args.item)))
+            return 1
 
         logger.info("Checking the EAD ID.")
         eadSuffix=listdir(args.item)[0]
@@ -98,7 +99,8 @@ def main():
         logger.info("Checking the EAD ID Directory.")
         if len(listdir(eadPath)) > 1:
             logger.warn("It appears as though there is more than one thing in your EAD directory!")
-            logger.warn("Directory contents: "+listdir(eadPath))
+            logger.warn("Directory contents: "+",".join(listdir(eadPath)))
+            return 1
 
         accNo=listdir(eadPath)[0]
         accNoPath=join(eadPath,accNo)
@@ -115,9 +117,11 @@ def main():
                 logger.warn("There appear to be too many or too few directories in your accession number directory.")
             if 'data' not in listdir(accNoPath):
                 logger.warn("There doesn't appear to be a data directory in your accession number directory.")
+                return 1
             if 'admin' not in listdir(accNoPath):
                 logger.warn("There doesn't appear to be an admin directory in your accession number directory.")
-            logger.warn('Directory contents: '+listdir(accNoPath))
+                return 1
+            logger.warn('Accession number directory contents: '+",".join(listdir(accNoPath)))
 
         logger.info("Checking data directory.")
         dataPath=join(accNoPath,"data")
@@ -157,6 +161,7 @@ def main():
             except IndexError:
                 pass
             adminPrefixList.append(prefix)
+        adminPrefixList=set(adminPrefixList)
         for prefix in adminPrefixList:
             if prefix not in prefixList:
                 logger.warn("The '"+prefix+"' prefix appears in the admin directory but not the data directory!")
@@ -164,7 +169,7 @@ def main():
             if prefix not in adminPrefixList:
                 logger.warn("The '"+prefix+"'prefix appears in the data directory but not the admin directory!")
         for prefix in adminPrefixList:
-            prefixSet=[directory for directory in listdir(dataPath) if re_compile('^'+prefix).match(directory)]
+            prefixSet=[directory for directory in listdir(adminPath) if re_compile('^'+prefix).match(directory)]
             nums=[]
             for folder in prefixSet:
                 num=folder.lstrip(prefix)
