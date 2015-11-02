@@ -80,12 +80,8 @@ def main():
 #        pathNoRoot=relpath(args.item,start=args.root)
         logger.info("Checking the ARK.")
         ark=relpath(args.item,start=args.root)
-        print(ark)
-        print(re_compile('\w{13}').match(ark))
         if not re_compile('^\w{13}$').match(ark):
             logger.warn(ark+" doesn't look like a valid ARK!")
-        else:
-            print("ark looks good")
 
         logger.info("Checking ARK directory")
         if len(listdir(args.item)) > 1:
@@ -113,7 +109,85 @@ def main():
             logger.warn('Your accession number doesn\'t appear to be valid.')
             loggern.warn('Accession Number: '+accNo)
 
+        logger.info("Checking the accession number directory.")
+        if len(listdir(accNoPath)) != 2 or 'data' not in listdir(accNoPath) or 'admin' not in listdir(accNoPath):
+            if len(listdir(accNoPath)) != 2:
+                logger.warn("There appear to be too many or too few directories in your accession number directory.")
+            if 'data' not in listdir(accNoPath):
+                logger.warn("There doesn't appear to be a data directory in your accession number directory.")
+            if 'admin' not in listdir(accNoPath):
+                logger.warn("There doesn't appear to be an admin directory in your accession number directory.")
+            logger.warn('Directory contents: '+listdir(accNoPath))
 
+        logger.info("Checking data directory.")
+        dataPath=join(accNoPath,"data")
+        dataFolderList=listdir(dataPath)
+        prefixList=[]
+        for folder in dataFolderList:
+            prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(0)
+            try:
+                prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(1)
+                logger.warn("Your prefix appears to have more letters after its index!")
+            except IndexError:
+                pass
+            prefixList.append(prefix)
+        prefixList=set(prefixList)
+        logger.info('Prefixes include: '+str(prefixList))
+        for prefix in prefixList:
+            prefixSet=[directory for directory in listdir(dataPath) if re_compile('^'+prefix).match(directory)]
+            nums=[]
+            for folder in prefixSet:
+                num=folder.lstrip(prefix)
+                nums.append(int(num))
+            maxNum=max(nums)
+            for i in range(1,maxNum+1):
+                if i not in nums:
+                    logger.warn("You appear to be missing a folder!")
+                    logger.warn("Missing folder in data directory: "+prefix+str(i))
+
+        logger.info("Checking admin directory.")
+        adminPath=join(accNoPath,"admin")
+        adminFolderList=listdir(adminPath)
+        adminPrefixList=[]
+        for folder in adminFolderList:
+            prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(0)
+            try:
+                prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(1)
+                logger.warn("Your prefix appears to have more letters after its index!")
+            except IndexError:
+                pass
+            adminPrefixList.append(prefix)
+        for prefix in adminPrefixList:
+            if prefix not in prefixList:
+                logger.warn("The '"+prefix+"' prefix appears in the admin directory but not the data directory!")
+        for prefix in prefixList:
+            if prefix not in adminPrefixList:
+                logger.warn("The '"+prefix+"'prefix appears in the data directory but not the admin directory!")
+        for prefix in adminPrefixList:
+            prefixSet=[directory for directory in listdir(dataPath) if re_compile('^'+prefix).match(directory)]
+            nums=[]
+            for folder in prefixSet:
+                num=folder.lstrip(prefix)
+                nums.append(int(num))
+            maxNum=max(nums)
+            for i in range(1,maxNum+1):
+                if i not in nums:
+                    logger.warn("You appear to be missing a folder!")
+                    logger.warn("Missing folder in admin directory: "+prefix+str(i))
+        for folder in adminFolderList:
+            adminFolderPath=join(adminPath,folder)
+            for recAdminData in ['fixityFromOrigin.txt','fixityInStaging.txt','log.txt','rsyncFromOrigin.txt']:
+                if recAdminData not in listdir(adminFolderPath):
+                    logger.warn("You appear to be missing a staging administrative component!")
+                    logger.warn(recAdminData+" missing from: "+adminFolderPath)
+        for folder in adminFolderList:
+            if folder not in dataFolderList:
+                logger.warn("You have a folder in your admin folder that is not in your data folder!")
+                logger.warn(join(adminPath,folder)+" appears in admin but not in data.")
+        for folder in dataFolderList:
+            if folder not in adminFolderList:
+                logger.warn("You have a folder in your data folder that is not in your admin folder!")
+                logger.warn(join(dataPath,folder)+" appears in data but not in admin.")
 
 
 

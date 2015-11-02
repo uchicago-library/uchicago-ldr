@@ -154,7 +154,7 @@ def main():
             destinationDataFolder=join(destinationDataRoot,prefix)
             assert(isdir(destinationDataFolder))
 
-        stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.presform.txt'))
+        stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.txt'))
         stagingDebugLog.setFormatter(log_format)
         stagingDebugLog.setLevel('DEBUG')
         logger.addHandler(stagingDebugLog)
