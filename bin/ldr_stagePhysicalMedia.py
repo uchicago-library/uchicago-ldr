@@ -75,7 +75,8 @@ def main():
     parser.add_argument("prefix",help="The prefix of the containing folder on disk",
                         action='store'
     )
-    parser.add_argument("--rehash",help="Disregard any existing previously generated hashes, recreate them on this run"
+    parser.add_argument("--rehash",help="Disregard any existing previously generated hashes, recreate them on this run",
+                        action="store_true"
     )
     args = parser.parse_args()
     log_format = Formatter( \
