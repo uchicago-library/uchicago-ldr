@@ -111,7 +111,7 @@ class Item(object):
         return accession
     
     def set_accession(self, identifier):
-        if re_compile('\w{13}').match(identifier):
+        if re_compile('^\w{13}$').match(identifier):
             self.accession = identifier
         else:
             raise ValueError("You did not pass a valid noid")
