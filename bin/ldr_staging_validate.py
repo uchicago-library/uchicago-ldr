@@ -123,11 +123,10 @@ def main():
                 logger.warn("There appear to be too many or too few directories in your accession number directory.")
             if 'data' not in listdir(accNoPath):
                 logger.warn("There doesn't appear to be a data directory in your accession number directory.")
-                return 1
             if 'admin' not in listdir(accNoPath):
                 logger.warn("There doesn't appear to be an admin directory in your accession number directory.")
-                return 1
             logger.warn('Accession number directory contents: '+",".join(listdir(accNoPath)))
+            return 1
 
         logger.info("Checking data directory.")
         dataPath=join(accNoPath,"data")
@@ -139,6 +138,7 @@ def main():
         for folder in dataFolderList:
             if not isdir(join(dataPath,folder)):
                 logger.warn(join(dataPath,folder)+" isn't a directory!")
+                return 1
             prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(0)
             try:
                 prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(1)
