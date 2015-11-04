@@ -62,13 +62,6 @@ def main():
                          dest="log_verb",default=None
                          \
     )
-    parser.add_argument("item", help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
-                        " a type of controlled collection"
-    )
-    parser.add_argument("root",help="Enter the root of the directory path",
-                        action="store"
-    )
     parser.add_argument("dest_root",help="Enter the destination root path",
                         action='store'
     )
@@ -98,11 +91,6 @@ def main():
         logger.addHandler(fh)
     logger.addHandler(ch)
     try:
-        if args.item[-1] == "/" and args.item != args.root:
-            logger.warn("It looks like you may have set the root incorrectly.")
-            wrongRootGoAnyways=input("Are you sure you want to continue? (y/n)\n")
-            if wrongRootGoAnyways is not 'y':
-                exit(1)
         shouldBeEAD=getImmediateSubDirs(args.dest_root)
         assert(len(shouldBeEAD)==1)
         shouldBeAccNo=getImmediateSubDirs(join(args.dest_root,shouldBeEAD[0]))

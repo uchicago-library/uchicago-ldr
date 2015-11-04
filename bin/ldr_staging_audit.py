@@ -62,13 +62,6 @@ def main():
                          dest="log_verb",default=None
                          \
     )
-    parser.add_argument("item", help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
-                        " a type of controlled collection"
-    )
-    parser.add_argument("root",help="Enter the root of the directory path",
-                        action="store"
-    )
     parser.add_argument("dest_root",help="Enter the destination root path",
                         action='store'
     )
@@ -132,6 +125,7 @@ def main():
                         existingMovedFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
 
         notMoved=[key for key in existingOriginalFileHashes if key not in existingMovedFileHashes]
+        foreignFiles=[key for key in existingMovedFileHashes if key not in existingOriginalFileHashes]
         badHash=[key for key in existingOriginalFileHashes if key not in notMoved and existingOriginalFileHashes[key] != existingMovedFileHashes[key]]
 
 
@@ -142,10 +136,13 @@ def main():
                 logger.debug("NOT MOVED: "+entry+":"+str(existingOriginalFileHashes[entry]))
             elif entry in badHash:
                 logger.debug("BAD HASH: "+entry+":"+str(existingOriginalFileHashes[entry]))
+        for entry in foreignFiles:
+            logger.debug("FOREIGN FILE: "+entry)
        
         logger.info(str(len(existingMovedFileHashes))+" file(s) total in the staging area.")
         logger.info(str(len(notMoved))+" file(s) not copied.")
         logger.info(str(len(badHash))+" file(s) have a different hash from the origin.")
+        logger.info(str(len(foreignFiles))+" file(s) appear to not have come from the origin.")
 
         return 0
     except KeyboardInterrupt:
