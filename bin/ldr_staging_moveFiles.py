@@ -19,7 +19,6 @@ from os.path import isdir
 from os.path import join
 from os.path import relpath
 from os.path import exists
-from sys import stdout
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
