@@ -50,9 +50,7 @@ def main():
                          dest="log_loc",
                          \
     )
-    parser.add_argument("item", help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
-                        " a type of controlled collection"
+    parser.add_argument("item", help="Enter the staging root of a staging directory to verify (the ARK directory)"
     )
     parser.add_argument("root",help="Enter the root of the directory path",
                         action="store"
@@ -77,8 +75,10 @@ def main():
     logger.addHandler(ch)
     #BEGIN MAIN HERE - EXAMPLE BELOW
     try:
-#        pathNoRoot=relpath(args.item,start=args.root)
         logger.info("Checking the ARK.")
+        if not isdir(args.item):
+            logger.warn("The provided staging root isn't a directory!")
+            return 1
         ark=relpath(args.item,start=args.root)
         if not re_compile('^\w{13}$').match(ark):
             logger.warn(ark+" doesn't look like a valid ARK!")
@@ -97,6 +97,9 @@ def main():
             logger.warn("EAD Suffix: "+eadSuffix)
 
         logger.info("Checking the EAD ID Directory.")
+        if not isdir(eadPath):
+            logger.warn("The EADID isn't a directory!")
+            return 1
         if len(listdir(eadPath)) > 1:
             logger.warn("It appears as though there is more than one thing in your EAD directory!")
             logger.warn("Directory contents: "+",".join(listdir(eadPath)))
@@ -112,6 +115,9 @@ def main():
             loggern.warn('Accession Number: '+accNo)
 
         logger.info("Checking the accession number directory.")
+        if not isdir(eadPath):
+            logger.warn("The accession number isn't a directory!")
+            return 1
         if len(listdir(accNoPath)) != 2 or 'data' not in listdir(accNoPath) or 'admin' not in listdir(accNoPath):
             if len(listdir(accNoPath)) != 2:
                 logger.warn("There appear to be too many or too few directories in your accession number directory.")
@@ -125,9 +131,14 @@ def main():
 
         logger.info("Checking data directory.")
         dataPath=join(accNoPath,"data")
+        if not isdir(dataPath):
+            logger.warn("The data path isn't a directory!")
+            return 1
         dataFolderList=listdir(dataPath)
         prefixList=[]
         for folder in dataFolderList:
+            if not isdir(join(dataPath,folder)):
+                logger.warn(join(dataPath,folder)+" isn't a directory!")
             prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(0)
             try:
                 prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(1)
@@ -154,6 +165,9 @@ def main():
         adminFolderList=listdir(adminPath)
         adminPrefixList=[]
         for folder in adminFolderList:
+            if not isdir(join(adminPath,folder)):
+                logger.warn(join(adminPath,folder)+" isn't a directory!")
+                return 1
             prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(0)
             try:
                 prefix=re_compile('^[a-zA-Z_-]*').match(folder).group(1)
@@ -182,7 +196,7 @@ def main():
         for folder in adminFolderList:
             adminFolderPath=join(adminPath,folder)
             for recAdminData in ['fixityFromOrigin.txt','fixityInStaging.txt','log.txt','rsyncFromOrigin.txt']:
-                if recAdminData not in listdir(adminFolderPath):
+                if recAdminData not in listdir(adminFolderPath) or not isfile(join(adminFolderPath,recAdminData)):
                     logger.warn("You appear to be missing a staging administrative component!")
                     logger.warn(recAdminData+" missing from: "+adminFolderPath)
         for folder in adminFolderList:
