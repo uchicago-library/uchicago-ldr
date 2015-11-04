@@ -35,7 +35,7 @@ def main():
     parser.add_argument( \
                          '-b','-verbose',help="set verbose logging",
                          action='store_const',dest='log_level',
-                         const=INFO,default='INFO' \
+                         const=INFO,default='WARN' \
     )
     # -d is debugging so anything you want to use a debugger gets logged if you
     # use this level
