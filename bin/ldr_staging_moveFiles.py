@@ -171,6 +171,8 @@ def main():
         assert(rsyncCommand.run_command()[0])
         with open(join(destinationAdminFolder,'rsyncFromOrigin.txt'),'a') as f:
             f.write(str(rsyncCommand.get_data()[1])+'\n')
+        if rsyncCommand.get_data()[1].returncode != 0:
+            logger.warn("Rsync exited with a non-zero return code: "+str(rsyncCommand.get_data()[1].returncode)
         logger.debug("Rsync output begins")
         logger.debug(rsyncCommand.get_data()[1].args)
         logger.debug(rsyncCommand.get_data()[1].returncode)
