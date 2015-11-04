@@ -15,7 +15,7 @@ class BashCommand(object):
     def run_command(self):
         assert isinstance(self.args,list)
         try:
-            cmd = run(self.args, stdout = PIPE, stderr = STDOUT, timeout=self.timeout)
+            cmd = run(self.args, stdout = PIPE, stderr = STDOUT, timeout=self.timeout,universal_newlines=True)
             self.command_ran = True
         except Exception as e:
             self.cmd_out = e
