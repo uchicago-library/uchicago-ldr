@@ -19,6 +19,7 @@ from os.path import isdir
 from os.path import join
 from os.path import relpath
 from os.path import exists
+from sys import stdout
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -76,6 +77,9 @@ def main():
                         action='store'
     )
     parser.add_argument("--rehash",help="Disregard any existing previously generated hashes, recreate them on this run",
+                        action="store_true"
+    )
+    parser.add_argument("--chain",help="Write the prefix+num to stdout, for chaining this command into the others via some intermediate connection",
                         action="store_true"
     )
     args = parser.parse_args()
@@ -154,6 +158,7 @@ def main():
 
         else:
             logger.info("Attempting to resume transfer into "+join(destinationDataRoot,prefix))
+            nextNum=""
             
             destinationAdminFolder=join(destinationAdminRoot,prefix)
             assert(isdir(destinationAdminFolder))
@@ -172,14 +177,17 @@ def main():
         with open(join(destinationAdminFolder,'rsyncFromOrigin.txt'),'a') as f:
             f.write(str(rsyncCommand.get_data()[1])+'\n')
         if rsyncCommand.get_data()[1].returncode != 0:
-            logger.warn("Rsync exited with a non-zero return code: "+str(rsyncCommand.get_data()[1].returncode)
+            logger.warn("Rsync exited with a non-zero return code: "+str(rsyncCommand.get_data()[1].returncode))
         logger.debug("Rsync output begins")
         logger.debug(rsyncCommand.get_data()[1].args)
         logger.debug(rsyncCommand.get_data()[1].returncode)
-        for line in rsyncCommand.get_data()[1].stdout.split(b'\n'):
+        for line in rsyncCommand.get_data()[1].stdout.split('\n'):
             logger.debug(line)
         logger.debug("Rsync output ends")
         logger.info("Rsync complete.")
+
+        if args.chain:
+            logger.info(prefix+nextNum)
 
         return 0
     except KeyboardInterrupt:
