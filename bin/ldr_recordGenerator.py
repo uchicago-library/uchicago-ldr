@@ -13,12 +13,14 @@ A module meant to ingest a digital acquisitions form and a staged directory and 
 from argparse import ArgumentParser
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
-from os import _exit
+from os import _exit,listdir
+from os.path import isdir,join,abspath,expandvars
 import json
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.forms.recordFields import RecordFields
+from uchicagoldr.forms.ldrFields import LDRFields
 from uchicagoldr.forms.digitalAcquisitionRead import ReadAcquisitionRecord
 from uchicagoldr.forms.digitalAcquisitionMap import AcquisitionRecordMapping
 
@@ -121,6 +123,7 @@ def main():
                         "directory path that you need to validate against" + \
                         " a type of controlled collection"
     )
+    parser.add_argument("--out-file",'-o',help="The location where the full record should be written to disk.",required=True)
     parser.add_argument("item", help="Enter a noid for an accession or a " + \
                         "directory path that you need to validate against" + \
                         " a type of controlled collection"
@@ -180,17 +183,60 @@ def main():
                 except KeyError:
                     print("WARNING: That key doesn't appear to be in the record root.")
 
-            
-
+        #File level information population
         b = Batch(args.root, args.item)
+        totalDigitalSize=0
         for item in b.find_items(from_directory=True):
             itemDict={}
             uid=item.get_file_path()  #This is where the UID should go, once we settle on how we are generating them
             itemDict['fileSize']=item.find_file_size()
+            totalDigitalSize+=itemDict['fileSize']
             itemDict['fileMime']=item.find_file_mime_type()
             itemDict['fileHash']=item.find_sha256_hash()
             record['fileInfo'][uid]=itemDict
+        record['totalDigitalSize']=totalDigitalSize
+        
+        #Write two records, one which contains the entirety of the record, including potential internal information, to an internal source, and another which contains information pertinent to the LDR into the admin directory
+        with open(args.out_file,'w') as f:
+            json.dump(record,f,indent=4,sort_keys=True)
+
+        pubRecord={}
+        for entry in LDRFields():
+            pubRecord[entry]=record[entry]
+
+        ldrRecordPath=None
+        try:
+            #Lets see if we are in a real staging structure
+            assert(len(listdir(args.item))==1)
+            assert(isdir(listdir(args.item)[0]))
+            EADPath=join(args.item,listdir(args.item)[0])
+            assert(len(listdir(EADPath)==1))
+            assert(isdir(listdir(EADPath[0])))
+            accNoPath=join(EADPath,listdir(eadPath)[0])
+            assert(len(listdir(accNoPath)==2))
+            assert("data" in listdir(accNoPath) and "admin" in listdir(accNoPath))
+            ldrRecordPath=join(accNoPath,admin)+'record.json'
+        except AssertionError:
+            print("You don't seem to have pointed the script at a fully qualified staging structure. Please manually specify a location to save the LDR record to, other leave this line blank to save only the full record.")
+            while ldrRecordPath == None:
+                ldrRecordPath=input("LDR Record Path: ")
+                if len(ldrRecordPath) > 0:
+                    ldrRecordPath=abspath(expandvars(ldrRecordPath))
+                    print("Attempted abspath "+ ldrRecordPath)
+                if ldrRecordPath == "":
+                    break
+                if not isdir(ldrRecordPath):
+                    ldrRecordPath=None
+
+        if ldrRecordPath != "":
+            with open(ldrRecordPath,'w') as f:
+                json.dump(pubRecord,f,indent=4,sort_keys=True)
+        else:
+            print("Skipping LDR Record generation")
+
+
         print(json.dumps(record,indent=4,sort_keys=True))
+
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
