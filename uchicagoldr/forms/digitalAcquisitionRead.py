@@ -4,7 +4,46 @@ def ReadAcquisitionRecord(digitalAcquisitionRecordPath):
     digitalAcquisitionRecordDict={}
     fieldValue=""
     #This is a list of all the terms which are on the accession form, used for delimiting fields
-    keyList=["Accession Number","Collection Title","Existing Digital Collection","Addenda","Date of Receipt","Date sent to DAS","Type","Origin","Donor Name","Donor Address","Donor Phone","Donor Email","Source Name","Source Address","Source Phone","Source Email","Receipt Letter","Send Inventory to Donor","Send Digital Inventory to Donor","Gift Acknowledgement or Deed of Gift","Access","Linear Feet","Boxes","Volumes","Digital Size","Other Size","Restrictions","Restriction Comments","Description","Administrative Comments","Received By","Date Received","DAS Received By","DAS Date Received","Digital Location","P/R/C","Physical Media","Existing Physical Collection","EADID","Physical Collection Has Finding Aid"]
+    keyList=["Accession Number", \
+             "Collection Title", \
+             "Existing Digital Collection", \
+             "Addenda", \
+             "Date of Receipt", \
+             "Date sent to DAS", \
+             "Type", \
+             "Origin", \
+             "Donor Name", \
+             "Donor Address", \
+             "Donor Phone", \
+             "Donor Email", \
+             "Source Name", \
+             "Source Address", \
+             "Source Phone", \
+             "Source Email", \
+             "Receipt Letter", \
+             "Send Inventory to Donor", \
+             "Send Digital Inventory to Donor", \
+             "Gift Acknowledgement or Deed of Gift", \
+             "Access", \
+             "Linear Feet", \
+             "Boxes", \
+             "Volumes", \
+             "Digital Size", \
+             "Other Size", \
+             "Restrictions", \
+             "Restriction Comments", \
+             "Description", \
+             "Administrative Comments", \
+             "Received By", \
+             "Date Received", \
+             "DAS Received By", \
+             "DAS Date Received", \
+             "Digital Location", \
+             "P/R/C", \
+             "Physical Media", \
+             "Existing Physical Collection", \
+             "EADID", \
+             "Physical Collection Has Finding Aid"]
     compoundKeys=['donor','source','physSize']
     for key in compoundKeys:
         digitalAcquisitionRecordDict[key]={}
@@ -31,5 +70,6 @@ def ReadAcquisitionRecord(digitalAcquisitionRecordPath):
             digitalAcquisitionRecordDict['donor'][value]=digitalAcquisitionRecordDict[value]
         if value == "Source Name" or value == "Source Address" or value == "Source Phone" or value == "Source Email":
             digitalAcquisitionRecordDict['source'][value]=digitalAcquisitionRecordDict[value]
-            
+        if value == "Linear Feet" or value == 'Boxes' or value == 'Volumes' or value == 'Other Size':
+            digitalAcquisitionRecordDict['physSize'][value]=digitalAcquisitionRecordDict[value]
     return digitalAcquisitionRecordDict

@@ -2,7 +2,7 @@ def AcquisitionRecordMapping():
     return [('accession number', 'Accession Number'),\
             ('summary', 'Description'),\
             ('collection', 'Collection Title'),\
-            ('EADID', 'EADID'),\
+            ('eadid', 'EADID'),\
             ('type', 'Type'),\
             ('prc', 'P/R/C'),\
             ('restrictions', 'Restrictions'),\
@@ -24,5 +24,8 @@ def AcquisitionRecordMapping():
             ('addenda', 'Addenda'),\
             ('physicalMedia', 'Physical Media'),\
             ('existingPhysicalCollection', 'Existing Physical Collection'),\
-            ('physicalHasFindingAid', 'Physical Collection Has Finding Aid') \
+            ('physicalHasFindingAid', 'Physical Collection Has Finding Aid'), \
+            ('totalPhysicalSize','physSize'), \
+            ('sentToDASOn','Date sent to DAS'), \
+            ('spanDate','Span Date')\
 ]

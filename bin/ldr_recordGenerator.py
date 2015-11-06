@@ -28,8 +28,8 @@ def instantiateRecord():
         record[entry]=""
     return record
 
-def selectValue(existingValue,newValue):
-    selection=input("Two Values have tried to populate the same entry:\n1) "+existingValue+"\n2) "+newValue+"\n please select one via typing either 1 or 2 and hitting Enter.")
+def selectValue(field,existingValue,newValue):
+    selection=input("Two Values have tried to populate the same entry: "+field+"\n1) "+existingValue+"\n2) "+newValue+"\nPlease select one via typing either 1 or 2 and hitting enter.\nSelection: ")
     if selection != "1" and selection != "2":
         print("Invalid input. Exiting.")
         exit()
@@ -38,6 +38,54 @@ def selectValue(existingValue,newValue):
             return existingValue
         else:
             return newValue
+
+def defaults():
+    return { 'dasRecBy':'balsamo', \
+             'fiscalYear':'2016', \
+             'giftAckOrDeed':'False', \
+             'sendInv':'False', \
+             'rights':"Copyright restrictions may apply.", \
+             'department':"Special Collections", \
+             'permittedUseAccess':'False', \
+             'permittedUseDiscover':'True', \
+             'fileInfo':{}, \
+             }
+
+def populateEmpties(record):
+    for entry in record:
+        if isinstance(record[entry],str):
+            if len(record[entry]) == 0:
+                value=input("The field \""+entry+"\" is currently blank. Enter a value, or hit enter to leave it blank.\n")
+                record[entry]=value
+        elif isinstance(record[entry],dict):
+            record[entry]=populateEmpties(record[entry])
+    return record
+
+def findEmpties(record,parentPath=""):
+    empties=[]
+    for entry in record:
+        newPath=parentPath+"/"+entry
+        if isinstance(record[entry],str) and len(record[entry]) == 0:
+            empties.append(newPath)
+        elif isinstance(record[entry],dict):
+            empties+=findEmpties(record[entry],newPath)
+    return empties
+
+def editRecord(record,key):
+    print("Editing entry \""+key+"\"")
+    if isinstance(record[key],str):
+        newValue=input("Please enter a new value: ")
+        record[key]=newValue
+    elif isinstance(record[key],dict):
+        print("Key value is a dictionary. Please specify a subkey specific to that dictionary")
+        print("Available subkeys:")
+        for subkey in record[key]:
+            print(subkey)
+        childKey=input("Subkey: ")
+        record[key]=editRecord(record[key],childKey)
+    else:
+        print("Key value is not a recognized editable data type. Sorry!")
+    return record
 
 def main():
     # start of parser boilerplate
@@ -98,23 +146,51 @@ def main():
         fh.setFormatter(log_format)
         logger.addHandler(fh)
     logger.addHandler(ch)
-    #BEGIN MAIN HERE - EXAMPLE BELOW
     try:
+        #Keep in mind that population order here matters a lot in terms of how much input the user will be asked for.
+
+        #Instantiate a blank record with all our fields set to a blank string, for bounding loops and no funny business when we try and print it.
         record=instantiateRecord()
-#        print(json.dumps(instantiateRecord(),indent=4,sort_keys=True))
+
+        #Map our defaults right into the record.
+        for entry in defaults():
+            record[entry]=defaults()[entry]
+
+        #Read all the digital acquisition forms, populate the record with their info, address conflicts
         for acqRecord in args.acquisition_record:
             acqDict=ReadAcquisitionRecord(acqRecord)
             for entry in AcquisitionRecordMapping():
                 if entry[1] in acqDict:
-                    if record[entry[0]]=="":
+                    if record[entry[0]]=="" or record[entry[0]] == acqDict[entry[1]]:
                         record[entry[0]]=acqDict[entry[1]]
                     else:
-                        record[entry[0]]=selectValue(record[entry[0]], acqDict[entry[1]])
-        print(json.dumps(record,indent=4,sort_keys=True))
-#        b = Batch(args.root, args.item)
-#        for item in b.find_items(from_directory=True):
-#            print(item.filepath)
+                        record[entry[0]]=selectValue(entry[0], record[entry[0]], acqDict[entry[1]])
+
+        #Manual input loop
+        userSuppliedKey=None
+        while userSuppliedKey != "":
+            print(json.dumps(record,indent=4,sort_keys=True))
+            print("Blank entries:")
+            for entry in findEmpties(record):
+                print(entry)
+            userSuppliedKey=input("Enter the key of any value you would like to manually populate or change.\nEnter on a blank line to continue.\nKey: ")
+            if userSuppliedKey != "":
+                try:
+                    editRecord(record,userSuppliedKey)
+                except KeyError:
+                    print("WARNING: That key doesn't appear to be in the record root.")
+
             
+
+        b = Batch(args.root, args.item)
+        for item in b.find_items(from_directory=True):
+            itemDict={}
+            uid=item.get_file_path()  #This is where the UID should go, once we settle on how we are generating them
+            itemDict['fileSize']=item.find_file_size()
+            itemDict['fileMime']=item.find_file_mime_type()
+            itemDict['fileHash']=item.find_sha256_hash()
+            record['fileInfo'][uid]=itemDict
+        print(json.dumps(record,indent=4,sort_keys=True))
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")

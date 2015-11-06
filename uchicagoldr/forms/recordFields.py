@@ -6,7 +6,7 @@ def RecordFields():
             'fiscalYear', \
             'ark', \
             'collection', \
-            'EADID', \
+            'eadid', \
             'spanDate', \
             'type', \
             'prc', \
@@ -42,5 +42,6 @@ def RecordFields():
             'addenda', \
             'physicalMedia', \
             'existingPhysicalCollection', \
-            'physicalHasFindingAid' \
+            'physicalHasFindingAid', \
+            'sentToDASOn' \
 ]
