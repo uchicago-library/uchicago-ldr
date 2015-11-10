@@ -99,7 +99,7 @@ def main():
     logger.addHandler(ch)
     try:
         pythonPath='python3'
-        scriptsLoc='/Users/balsamo/repos/ldrGit/uchicago-ldr/bin/'
+        scriptsLoc='/Users/balsamo/repos/uchicago-ldr/bin/'
 
         mvArgs=[pythonPath,scriptsLoc+'ldr_staging_moveFiles.py',args.item,args.root,args.dest_root,args.prefix,"--chain"]
         mvCommand=BashCommand(mvArgs)
