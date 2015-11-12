@@ -209,6 +209,8 @@ def parse(item):
     excludeExtensions=['.exe']
     excludeMimes=['application/x-executable']
 
+    extension=item.find_file_extension().lower()
+
     #Skip cases
     if ".presform" in item.find_file_name():
         logger.info("Skipping - presform")
@@ -222,7 +224,7 @@ def parse(item):
         logger.info("Skipping - dotfile")
         return
 
-    if item.find_file_extension() in excludeExtensions:
+    if extension in excludeExtensions:
         logger.info("Skipping - excluded extension")
         return
 
@@ -231,47 +233,47 @@ def parse(item):
         return
 
     #Conversion conditionals
-    if item.find_file_extension() in audioExtensions or item.find_file_mime_type() in audioMimes:
+    if extension in audioExtensions or item.find_file_mime_type() in audioMimes:
         logger.info("Audio extension or mime detected")
         result=audioConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() in officeExtensions or item.find_file_mime_type() in officeMimes:
+    if extension in officeExtensions or item.find_file_mime_type() in officeMimes:
         logger.info("Office extension or mime detected")
         result=officeConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() == ".xls" or item.find_file_extension() == ".xlsx":
+    if extension == ".xls" or extension == ".xlsx":
         logger.info("XLS extension detected")
         result=xlsConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() == ".doc" or item.find_file_extension() == ".docx":
+    if extension == ".doc" or extension == ".docx":
         logger.info("DOC extension detected")
         result=txtConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() in videoExtensions or item.find_file_mime_type() in videoMimes:
+    if extension in videoExtensions or item.find_file_mime_type() in videoMimes:
         logger.info("Video extension or mime detected")
         result=videoConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() in imageExtensions or item.find_file_mime_type() in imageMimes:
+    if extension in imageExtensions or item.find_file_mime_type() in imageMimes:
         logger.info("Image extension or mime detected")
         result=imageConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() == ".gif":
+    if extension == ".gif":
         logger.info("GIF extension detected")
         result=gifConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() in zipExtensions or item.find_file_mime_type() in zipMimes:
+    if extension in zipExtensions or item.find_file_mime_type() in zipMimes:
         logger.info("Zip extension or mime detected")
         result=zipConverter(item)
         parseResult(result)
 
-    if item.find_file_extension() in htmlExtensions or item.find_file_mime_type() in htmlMimes:
+    if extension in htmlExtensions or item.find_file_mime_type() in htmlMimes:
         logger.info("HTML extension or mime detected")
         result=htmlConverter(item)
         parseResult(result)
