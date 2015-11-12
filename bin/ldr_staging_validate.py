@@ -67,7 +67,8 @@ def main():
     )
     ch = StreamHandler()
     ch.setFormatter(log_format)
-    logger.setLevel(args.log_level)
+    ch.setLevel('INFO')
+    logger.setLevel('DEBUG')
     if args.log_loc:
         fh = FileHandler(args.log_loc)
         fh.setFormatter(log_format)
@@ -115,7 +116,7 @@ def main():
             loggern.warn('Accession Number: '+accNo)
 
         logger.info("Checking the accession number directory.")
-        if not isdir(eadPath):
+        if not isdir(accNoPath):
             logger.warn("The accession number isn't a directory!")
             return 1
         if len(listdir(accNoPath)) != 2 or 'data' not in listdir(accNoPath) or 'admin' not in listdir(accNoPath):
@@ -133,7 +134,12 @@ def main():
         if not isdir(dataPath):
             logger.warn("The data path isn't a directory!")
             return 1
-        dataFolderList=listdir(dataPath)
+        dataFolderList=[x for x in listdir(dataPath) if isdir(join(dataPath,x))]
+        if dataFolderList != listdir(dataPath):
+            logger.warn("The following are in the data directory but aren't directories:")
+            for entry in listdir(dataPath):
+                if entry not in dataFolderList:
+                    logger.warn(entry)
         prefixList=[]
         for folder in dataFolderList:
             if not isdir(join(dataPath,folder)):
@@ -162,7 +168,12 @@ def main():
 
         logger.info("Checking admin directory.")
         adminPath=join(accNoPath,"admin")
-        adminFolderList=listdir(adminPath)
+        adminFolderList=[x for x in listdir(adminPath) if isdir(join(adminPath,x))]
+        if adminFolderList != listdir(adminPath):
+            logger.warn("The following are in the admin directory but aren't directories:")
+            for entry in listdir(adminPath):
+                if entry not in adminFolderList:
+                    logger.warn(entry)
         adminPrefixList=[]
         for folder in adminFolderList:
             if not isdir(join(adminPath,folder)):
@@ -209,7 +220,7 @@ def main():
                 logger.warn(join(dataPath,folder)+" appears in data but not in admin.")
 
 
-
+        logger.info('Run complete')
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
