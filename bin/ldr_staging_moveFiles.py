@@ -28,6 +28,16 @@ def getImmediateSubDirs(path):
     return [name for name in listdir(path) if isdir(join(path,name))]
 
 def main():
+    log_format = Formatter( \
+                            "[%(levelname)s] %(asctime)s  " + \
+                            "= %(message)s",
+                            datefmt="%Y-%m-%dT%H:%M:%S" \
+    )
+    global logger
+    logger = getLogger( \
+                        "lib.uchicago.repository.logger" \
+    )
+    logger.setLevel('DEBUG')
     # start of parser boilerplate
     parser = ArgumentParser(description="A command line utility for staging physical media",
                             epilog="Copyright University of Chicago; " + \
@@ -81,31 +91,22 @@ def main():
     parser.add_argument("--chain",help="Write the prefix+num to stdout, for chaining this command into the others via some intermediate connection",
                         action="store_true"
     )
+    parser.add_argument("--weird-root",help="If for some reason you deliberately want to generate a strange item root structure which doesn't reflect rsyncs path interpretation behavior pass this option",default=False,
+                        action="store_true"
+    )
     args = parser.parse_args()
-    log_format = Formatter( \
-                            "[%(levelname)s] %(asctime)s  " + \
-                            "= %(message)s",
-                            datefmt="%Y-%m-%dT%H:%M:%S" \
-    )
-    global logger
-    logger = getLogger( \
-                        "lib.uchicago.repository.logger" \
-    )
     ch = StreamHandler()
     ch.setFormatter(log_format)
     ch.setLevel(args.log_level)
-    logger.setLevel('DEBUG')
+    logger.addHandler(ch)
     if args.log_loc:
         fh = FileHandler(args.log_loc)
         fh.setFormatter(log_format)
         logger.addHandler(fh)
-    logger.addHandler(ch)
+    if args.item[-1] == "/" and args.item != args.root and not args.weird_root:
+        logger.critical("Root appears to not conform to rsync path specs.")
+        exit(1)
     try:
-        if args.item[-1] == "/" and args.item != args.root:
-            logger.warn("It looks like you may have set the root incorrectly.")
-            wrongRootGoAnyways=input("Are you sure you want to continue? (y/n)\n")
-            if wrongRootGoAnyways is not 'y':
-                exit(1)
         assert(isdir(args.dest_root))
         shouldBeEAD=getImmediateSubDirs(args.dest_root)
         assert(len(shouldBeEAD)==1)

@@ -19,6 +19,7 @@ from os.path import isdir
 from os.path import join
 from os.path import relpath
 from os.path import exists
+from re import match
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -105,6 +106,10 @@ def main():
         mvCommand=BashCommand(mvArgs)
         assert(mvCommand.run_command()[0])
         print("\n".join(mvCommand.get_data()[1].stdout.split('\n')))
+        for line in mvCommand.get_data()[1].stdout.split('\n'):
+            if match('^\[CRITICAL\]',line):
+                print("Critical error detected. Exiting")
+                exit(1)
         folder=mvCommand.get_data()[1].stdout.split('=')[-1].rstrip('\n').strip()
 
         origHashArgs=[pythonPath,scriptsLoc+'ldr_staging_originHash.py',args.item,args.root,args.dest_root,folder]
@@ -113,6 +118,10 @@ def main():
         origHashCommand=BashCommand(origHashArgs)
         assert(origHashCommand.run_command()[0])
         print("\n".join(origHashCommand.get_data()[1].stdout.split('\n')))
+        for line in origHashCommand.get_data()[1].stdout.split('\n'):
+            if match('^\[CRITICAL\]',line):
+                print("Critical error detected. Exiting")
+                exit(1)
 
         stageHashArgs=[pythonPath,scriptsLoc+'ldr_staging_stagingHash.py',args.dest_root,folder]
         if args.rehash:
@@ -120,11 +129,19 @@ def main():
         stageHashCommand=BashCommand(stageHashArgs)
         assert(stageHashCommand.run_command()[0])
         print("\n".join(stageHashCommand.get_data()[1].stdout.split('\n')))
+        for line in stageHashCommand.get_data()[1].stdout.split('\n'):
+            if match('^\[CRITICAL\]',line):
+                print("Critical error detected. Exiting")
+                exit(1)
 
         auditArgs=[pythonPath,scriptsLoc+'ldr_staging_audit.py',args.dest_root,folder]
         auditCommand=BashCommand(auditArgs)
         assert(auditCommand.run_command()[0])
         print("\n".join(auditCommand.get_data()[1].stdout.split('\n')))
+        for line in auditCommand.get_data()[1].stdout.split('\n'):
+            if match('^\[CRITICAL\]',line):
+                print("Critical error detected. Exiting")
+                exit(1)
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
