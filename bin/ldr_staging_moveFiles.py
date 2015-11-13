@@ -28,6 +28,16 @@ def getImmediateSubDirs(path):
     return [name for name in listdir(path) if isdir(join(path,name))]
 
 def main():
+    log_format = Formatter( \
+                            "[%(levelname)s] %(asctime)s  " + \
+                            "= %(message)s",
+                            datefmt="%Y-%m-%dT%H:%M:%S" \
+    )
+    global logger
+    logger = getLogger( \
+                        "lib.uchicago.repository.logger" \
+    )
+    logger.setLevel('DEBUG')
     # start of parser boilerplate
     parser = ArgumentParser(description="A command line utility for staging physical media",
                             epilog="Copyright University of Chicago; " + \
@@ -78,26 +88,26 @@ def main():
     parser.add_argument("--rehash",help="Disregard any existing previously generated hashes, recreate them on this run",
                         action="store_true"
     )
+    parser.add_argument("--chain",help="Write the prefix+num to stdout, for chaining this command into the others via some intermediate connection",
+                        action="store_true"
+    )
+    parser.add_argument("--weird-root",help="If for some reason you deliberately want to generate a strange item root structure which doesn't reflect rsyncs path interpretation behavior pass this option",default=False,
+                        action="store_true"
+    )
     args = parser.parse_args()
-    log_format = Formatter( \
-                            "[%(levelname)s] %(asctime)s  " + \
-                            "= %(message)s",
-                            datefmt="%Y-%m-%dT%H:%M:%S" \
-    )
-    global logger
-    logger = getLogger( \
-                        "lib.uchicago.repository.logger" \
-    )
     ch = StreamHandler()
     ch.setFormatter(log_format)
     ch.setLevel(args.log_level)
-    logger.setLevel('DEBUG')
+    logger.addHandler(ch)
     if args.log_loc:
         fh = FileHandler(args.log_loc)
         fh.setFormatter(log_format)
         logger.addHandler(fh)
-    logger.addHandler(ch)
+    if args.item[-1] == "/" and args.item != args.root and not args.weird_root:
+        logger.critical("Root appears to not conform to rsync path specs.")
+        exit(1)
     try:
+        assert(isdir(args.dest_root))
         shouldBeEAD=getImmediateSubDirs(args.dest_root)
         assert(len(shouldBeEAD)==1)
         shouldBeAccNo=getImmediateSubDirs(join(args.dest_root,shouldBeEAD[0]))
@@ -148,13 +158,14 @@ def main():
 
         else:
             logger.info("Attempting to resume transfer into "+join(destinationDataRoot,prefix))
+            nextNum=""
             
             destinationAdminFolder=join(destinationAdminRoot,prefix)
             assert(isdir(destinationAdminFolder))
             destinationDataFolder=join(destinationDataRoot,prefix)
             assert(isdir(destinationDataFolder))
 
-        stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.presform.txt'))
+        stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.txt'))
         stagingDebugLog.setFormatter(log_format)
         stagingDebugLog.setLevel('DEBUG')
         logger.addHandler(stagingDebugLog)
@@ -165,87 +176,18 @@ def main():
         assert(rsyncCommand.run_command()[0])
         with open(join(destinationAdminFolder,'rsyncFromOrigin.txt'),'a') as f:
             f.write(str(rsyncCommand.get_data()[1])+'\n')
+        if rsyncCommand.get_data()[1].returncode != 0:
+            logger.warn("Rsync exited with a non-zero return code: "+str(rsyncCommand.get_data()[1].returncode))
         logger.debug("Rsync output begins")
         logger.debug(rsyncCommand.get_data()[1].args)
         logger.debug(rsyncCommand.get_data()[1].returncode)
-        for line in rsyncCommand.get_data()[1].stdout.split(b'\n'):
+        for line in rsyncCommand.get_data()[1].stdout.split('\n'):
             logger.debug(line)
         logger.debug("Rsync output ends")
         logger.info("Rsync complete.")
 
-        logger.debug("Creating batch from original files.")
-        originalFiles=Batch(args.root,directory=args.item)
-
-        existingOriginalFileHashes={}
-        originalFileHashes={}
-        logger.info("Hashing original files")
-        if exists(join(destinationAdminFolder,'fixityFromOrigin.txt')):
-            with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'r') as f:
-                for line in f.readlines():
-                    if not args.rehash:
-                        splitLine=line.split('\t')
-                        if splitLine[1] != "ERROR":
-                            existingOriginalFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
-        with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'a') as f:
-            for item in originalFiles.find_items(from_directory=True):
-                if item.test_readability():
-                    item.set_root_path(args.root)
-                    if relpath(item.get_file_path(),start=item.get_root_path()) not in existingOriginalFileHashes:
-                        item.set_sha256(item.find_sha256_hash())
-                        item.set_md5(item.find_md5_hash())
-                        originalFileHashes[relpath(item.get_file_path(),start=item.get_root_path())]=[item.get_sha256(),item.get_md5()]
-                else:
-                    logger.warn("COULD NOT READ FILE: "+item.get_file_path())
-                    originalFileHashes[relpath(item.get_file_path(),start=args.root)]=["ERROR","ERROR"]
-            for entry in originalFileHashes:
-                f.write(entry+"\t"+originalFileHashes[entry][0]+'\t'+originalFileHashes[entry][1]+'\n')
-
-        logger.debug("Creating batch from moved files.")
-        movedFiles=Batch(args.dest_root,directory=destinationDataFolder)
-        
-        existingMovedFileHashes={}
-        movedFileHashes={}
-        logger.info("Hashing copied files.")
-        if exists(join(destinationAdminFolder,'fixityInStaging.txt')):
-            with open(join(destinationAdminFolder,'fixityInStaging.txt'),'r') as f:
-                if not args.rehash:
-                    for line in f.readlines():
-                        splitLine=line.split('\t')
-                        if splitLine[1] != "ERROR":
-                            existingMovedFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
-        with open(join(destinationAdminFolder,'fixityInStaging.txt'),'a') as f:
-            for item in movedFiles.find_items(from_directory=True):
-                if item.test_readability():
-                    item.set_root_path(destinationDataFolder)
-                    if relpath(item.get_file_path(),start=item.get_root_path()) not in existingMovedFileHashes:
-                        item.set_sha256(item.find_sha256_hash())
-                        item.set_md5(item.find_md5_hash())
-                        movedFileHashes[relpath(item.get_file_path(),start=destinationDataFolder)]=[item.get_sha256(),item.get_md5()]
-                else:
-                    logger.warn("COULD NOT READ FILE: "+item.get_file_path())
-                    movedFileHashes[relpath(item.get_file_path(),start=destinationDataFolder)]=["ERROR","ERROR"]
-            for entry in movedFileHashes:
-                f.write(entry+"\t"+movedFileHashes[entry][0]+'\t'+movedFileHashes[entry][1]+'\n')
-
-        existingOriginalFileHashes.update(originalFileHashes)
-        existingMovedFileHashes.update(movedFileHashes)
-
-        notMoved=[key for key in existingOriginalFileHashes if key not in existingMovedFileHashes]
-        badHash=[key for key in existingOriginalFileHashes if key not in notMoved and existingOriginalFileHashes[key] != existingMovedFileHashes[key]]
-
-
-        for entry in originalFileHashes:
-            if entry not in notMoved and entry not in badHash:
-                logger.debug("GOOD: "+entry+":"+str(originalFileHashes[entry]))
-            elif entry in notMoved:
-                logger.debug("NOT MOVED: "+entry+":"+str(originalFileHashes[entry]))
-            elif entry in badHash:
-                logger.debug("BAD HASH: "+entry+":"+str(originalFileHashes[entry]))
-       
-        logger.info(str(len(movedFileHashes))+" file(s) moved without issue.")
-        logger.info(str(len(existingMovedFileHashes))+" file(s) total in the staging area.")
-        logger.info(str(len(notMoved))+" file(s) not copied.")
-        logger.info(str(len(badHash))+" file(s) have a different hash from the origin.")
+        if args.chain:
+            logger.info(prefix+nextNum)
 
         return 0
     except KeyboardInterrupt:
