@@ -3,11 +3,11 @@ def RecordFieldsValidation():
             ['accession number', ["^\d{4}-\d{3}$"]],\
             ['department', []],\
             ['summary', []],\
-            ['fiscalYear', [".{1,}"]],\
+            ['fiscalYear', ["\d{4}"]],\
             ['ark', ["^\w{13}$"]],\
             ['collection', [".{1,}"]],\
             ['eadid', [".{1,}"]],\
-            ['spanDate', []],\
+            ['spanDate', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})-\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$|^$"]],\
             ['type', ["^AR$|^Ar$|^MS$|^Ms$|^CJA$|^OTHER$"]],\
             ['prc', ["^P$|^p$|^R$|^r$|^C$|^c$"]],\
             ['rights', [".{1,}"]],\
@@ -18,12 +18,12 @@ def RecordFieldsValidation():
             ['totalPhysicalSize', []],\
             ['physicalCondition', []],\
             ['physicalLocation', []],\
-            ['fileRecDate', []],\
+            ['fileRecDate', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$"]],\
             ['fileInfo', []],\
-            ['fileAccDate', [".{1,}"]],\
-            ['fileTransDate', []],\
-            ['fileBackDate', []],\
-            ['fileDelDate', []],\
+            ['fileAccDate', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$"]],\
+            ['fileTransDate', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$|^$"]],\
+            ['fileBackDate', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$|^$"]],\
+            ['fileDelDate', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$|^$"]],\
             ['donor', []],\
             ['source', []],\
             ['origin', []],\
@@ -32,7 +32,7 @@ def RecordFieldsValidation():
             ['adminNote', []],\
             ['priority', []],\
             ['existingDigitalCollection', ["^True$|^False$"]],\
-            ['dasRecDate', [".{1,}"]],\
+            ['dasRecDate', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$|^$"]],\
             ['recLetter', ["^True$|^False$"]],\
             ['sendInv', ["^True$|^False$"]],\
             ['giftAckOrDeed', ["^True$|^False$"]],\
@@ -43,5 +43,5 @@ def RecordFieldsValidation():
             ['physicalMedia', []],\
             ['existingPhysicalCollection', ["^True$|^False$"]],\
             ['physicalHasFindingAid', ["^True$|^False$"]],\
-            ['sentToDASOn', []]\
+            ['sentToDASOn', ["^\d{1,2}(/|-|\.)\d{1,2}(/|-|.)(\d{2}|\d{4})$|^$"]]\
 ]

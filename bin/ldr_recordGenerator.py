@@ -200,7 +200,7 @@ def main():
         #Manual input loop
         manualInput(record)
 
-        #Run some automated processing over the record to clean up certain values if required.s
+        #Run some automated processing over the record to clean up certain values if required.
         print("Beginning attempts at automated boolean interpretation")
         for entry in RecordFieldsBooleans():
             suggestion=stringToBool(record[entry])
@@ -266,7 +266,8 @@ def main():
             with open(ldrRecordPath,'w') as f:
                 json.dump(pubRecord,f,indent=4,sort_keys=True)
         else:
-            print("Skipping LDR Record generation")
+            print("LDR Record generation skipped.")
+                
 
 
         print(json.dumps(record,indent=4,sort_keys=True))
