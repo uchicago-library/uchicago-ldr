@@ -116,6 +116,18 @@ def stringToBool(string):
             return "True"
     return string
 
+def validate(record,validator):
+    for entry in validator:
+        #Eventually this is where validation of nested values should go, if required
+        if type(record[entry[0]]) != str:
+            continue
+        for regex in entry[1]:
+            while not match(regex,record[entry[0]]):
+                print(entry[0]+" ("+record[entry[0]]+") does not match against a validation regex! ("+regex+")\nPlease input a new value that conforms to the required validation expression.")
+                editRecord(record,entry[0])
+    return record
+    
+
 def main():
     # start of parser boilerplate
     parser = ArgumentParser(description=" A module meant to ingest a digital acquisitions form and a staged directory and produce a record designed for use by Special Collections and the DAS.",
@@ -208,14 +220,7 @@ def main():
                 record[entry]=selectValue(entry,record[entry],suggestion)
 
         #Validate the record fields against their stored regexes
-        for entry in RecordFieldsValidation():
-            #Eventually this is where validation of nested values should go, if required
-            if type(record[entry[0]]) != str:
-                continue
-            for regex in entry[1]:
-                while not match(regex,record[entry[0]]):
-                    print(entry[0]+" ("+record[entry[0]]+") does not match against a validation regex! ("+regex+")\nPlease input a new value that conforms to the required validation expression.")
-                    editRecord(record,entry[0])
+        record=validate(record,RecordFieldsValidation())
 
         #File level information population
         b = Batch(args.root, args.item)
@@ -267,8 +272,6 @@ def main():
                 json.dump(pubRecord,f,indent=4,sort_keys=True)
         else:
             print("LDR Record generation skipped.")
-                
-
 
         print(json.dumps(record,indent=4,sort_keys=True))
 
