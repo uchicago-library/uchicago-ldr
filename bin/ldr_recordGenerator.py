@@ -228,7 +228,7 @@ def main():
         for item in b.find_items(from_directory=True):
             itemDict={}
             item.set_accession(item.find_file_accession())
-            uid=item.find_canonical_filepath()  #This is where the UID should go, once we settle on how we are generating them
+            uid=join(item.get_accession(),item.find_canonical_filepath())  #This is where the UID should go, once we settle on how we are generating them
             itemDict['fileSize']=item.find_file_size()
             totalDigitalSize+=itemDict['fileSize']
             itemDict['fileMime']=item.find_file_mime_type()
