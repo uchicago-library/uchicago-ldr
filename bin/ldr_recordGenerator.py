@@ -21,6 +21,7 @@ from re import match
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.forms.recordFields import RecordFields
+from uchicagoldr.forms.recordFieldsBooleans import RecordFieldsBooleans
 from uchicagoldr.forms.recordFieldsValidation import RecordFieldsValidation
 from uchicagoldr.forms.ldrFields import LDRFields
 from uchicagoldr.forms.digitalAcquisitionRead import ReadAcquisitionRecord
@@ -46,8 +47,6 @@ def selectValue(field,existingValue,newValue):
 def defaults():
     return { 'dasRecBy':'balsamo', \
              'fiscalYear':'2016', \
-             'giftAckOrDeed':'False', \
-             'sendInv':'False', \
              'rights':"Copyright restrictions may apply.", \
              'department':"Special Collections", \
              'permittedUseAccess':'False', \
@@ -202,9 +201,17 @@ def main():
         manualInput(record)
 
         #Run some automated processing over the record to clean up certain values if required.s
+        print("Beginning attempts at automated boolean interpretation")
+        for entry in RecordFieldsBooleans():
+            suggestion=stringToBool(record[entry])
+            if suggestion != record[entry]:
+                record[entry]=selectValue(entry,record[entry],suggestion)
 
         #Validate the record fields against their stored regexes
         for entry in RecordFieldsValidation():
+            #Eventually this is where validation of nested values should go, if required
+            if type(record[entry[0]]) != str:
+                continue
             for regex in entry[1]:
                 while not match(regex,record[entry[0]]):
                     print(entry[0]+" ("+record[entry[0]]+") does not match against a validation regex! ("+regex+")\nPlease input a new value that conforms to the required validation expression.")
@@ -233,7 +240,7 @@ def main():
 
         ldrRecordPath=None
         try:
-            #Lets see if we are in a real staging structure
+            #Lets see if we are in a real (and properly formed) staging structure
             assert(len(listdir(args.item))==1)
             assert(isdir(join(args.item,listdir(args.item)[0])))
             EADPath=join(args.item,listdir(args.item)[0])

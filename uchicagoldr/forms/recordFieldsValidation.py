@@ -3,15 +3,15 @@ def RecordFieldsValidation():
             ['accession number', ["^\d{4}-\d{3}$"]],\
             ['department', []],\
             ['summary', []],\
-            ['fiscalYear', []],\
+            ['fiscalYear', [".{1,}"]],\
             ['ark', ["^\w{13}$"]],\
-            ['collection', []],\
-            ['eadid', []],\
+            ['collection', [".{1,}"]],\
+            ['eadid', [".{1,}"]],\
             ['spanDate', []],\
-            ['type', []],\
-            ['prc', []],\
-            ['rights', []],\
-            ['restrictions', []],\
+            ['type', ["^AR$|^Ar$|^MS$|^Ms$|^CJA$|^OTHER$"]],\
+            ['prc', ["^P$|^p$|^R$|^r$|^C$|^c$"]],\
+            ['rights', [".{1,}"]],\
+            ['restrictions', ["^R-|^r-"]],\
             ['restrictionComment', []],\
             ['totalDigitalSize', []],\
             ['digitalCondition', []],\
@@ -20,28 +20,28 @@ def RecordFieldsValidation():
             ['physicalLocation', []],\
             ['fileRecDate', []],\
             ['fileInfo', []],\
-            ['fileAccDate', []],\
+            ['fileAccDate', [".{1,}"]],\
             ['fileTransDate', []],\
             ['fileBackDate', []],\
             ['fileDelDate', []],\
             ['donor', []],\
             ['source', []],\
             ['origin', []],\
-            ['permittedUseAccess', []],\
-            ['permittedUseDiscover', []],\
+            ['permittedUseAccess', ["^True$|^False$"]],\
+            ['permittedUseDiscover', ["^True$|^False$"]],\
             ['adminNote', []],\
             ['priority', []],\
-            ['existingDigitalCollection', []],\
-            ['dasRecDate', []],\
-            ['recLetter', []],\
-            ['sendInv', []],\
-            ['giftAckOrDeed', []],\
+            ['existingDigitalCollection', ["^True$|^False$"]],\
+            ['dasRecDate', [".{1,}"]],\
+            ['recLetter', ["^True$|^False$"]],\
+            ['sendInv', ["^True$|^False$"]],\
+            ['giftAckOrDeed', ["^True$|^False$"]],\
             ['access', []],\
             ['recBy', []],\
             ['dasRecBy', []],\
-            ['addenda', []],\
+            ['addenda', ["^True$|^False$"]],\
             ['physicalMedia', []],\
-            ['existingPhysicalCollection', []],\
-            ['physicalHasFindingAid', []],\
+            ['existingPhysicalCollection', ["^True$|^False$"]],\
+            ['physicalHasFindingAid', ["^True$|^False$"]],\
             ['sentToDASOn', []]\
 ]
