@@ -168,11 +168,16 @@ def main():
 
         logger.info("Checking admin directory.")
         adminPath=join(accNoPath,"admin")
+        topLevelAdminFiles=['fileConversions.txt','record.json']
+        for entry in topLevelAdminFiles:
+            if entry not in listdir(adminPath):
+                logger.warn(entry+" is missing from the admin folder!")
+
         adminFolderList=[x for x in listdir(adminPath) if isdir(join(adminPath,x))]
-        if adminFolderList != listdir(adminPath):
+        if adminFolderList != [x for x in listdir(adminPath) if x not in topLevelAdminFiles]:
             logger.warn("The following are in the admin directory but aren't directories:")
             for entry in listdir(adminPath):
-                if entry not in adminFolderList:
+                if entry not in adminFolderList and entry not in topLevelAdminFiles:
                     logger.warn(entry)
         adminPrefixList=[]
         for folder in adminFolderList:
