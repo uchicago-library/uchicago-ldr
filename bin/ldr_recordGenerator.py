@@ -16,10 +16,12 @@ from logging import DEBUG, FileHandler, Formatter, getLogger, \
 from os import _exit,listdir
 from os.path import isdir,join,abspath,expandvars
 import json
+from re import match
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.forms.recordFields import RecordFields
+from uchicagoldr.forms.recordFieldsValidation import RecordFieldsValidation
 from uchicagoldr.forms.ldrFields import LDRFields
 from uchicagoldr.forms.digitalAcquisitionRead import ReadAcquisitionRecord
 from uchicagoldr.forms.digitalAcquisitionMap import AcquisitionRecordMapping
@@ -89,6 +91,32 @@ def editRecord(record,key):
         print("Key value is not a recognized editable data type. Sorry!")
     return record
 
+def manualInput(record):
+    userSuppliedKey=None
+    while userSuppliedKey != "":
+        print(json.dumps(record,indent=4,sort_keys=True))
+        print("Blank entries:")
+        for entry in findEmpties(record):
+            print(entry)
+        userSuppliedKey=input("Enter the key of any value you would like to manually populate or change.\nEnter on a blank line to continue.\nKey: ")
+        if userSuppliedKey != "":
+            try:
+                editRecord(record,userSuppliedKey)
+            except KeyError:
+                print("WARNING: That key doesn't appear to be in the record root.")
+
+def stringToBool(string):
+    string=string.lower()
+    negatives=['f','false','no','n','n/a','']
+    positives=['t','true','yes','y']
+    for term in negatives:
+        if string == term:
+            return "False"
+    for term in positives:
+        if string == term:
+            return "True"
+    return string
+
 def main():
     # start of parser boilerplate
     parser = ArgumentParser(description=" A module meant to ingest a digital acquisitions form and a staged directory and produce a record designed for use by Special Collections and the DAS.",
@@ -156,6 +184,7 @@ def main():
         record=instantiateRecord()
 
         #Map our defaults right into the record.
+        #TODO: Move default mapping into form library
         for entry in defaults():
             record[entry]=defaults()[entry]
 
@@ -170,18 +199,16 @@ def main():
                         record[entry[0]]=selectValue(entry[0], record[entry[0]], acqDict[entry[1]])
 
         #Manual input loop
-        userSuppliedKey=None
-        while userSuppliedKey != "":
-            print(json.dumps(record,indent=4,sort_keys=True))
-            print("Blank entries:")
-            for entry in findEmpties(record):
-                print(entry)
-            userSuppliedKey=input("Enter the key of any value you would like to manually populate or change.\nEnter on a blank line to continue.\nKey: ")
-            if userSuppliedKey != "":
-                try:
-                    editRecord(record,userSuppliedKey)
-                except KeyError:
-                    print("WARNING: That key doesn't appear to be in the record root.")
+        manualInput(record)
+
+        #Run some automated processing over the record to clean up certain values if required.s
+
+        #Validate the record fields against their stored regexes
+        for entry in RecordFieldsValidation():
+            for regex in entry[1]:
+                while not match(regex,record[entry[0]]):
+                    print(entry[0]+" ("+record[entry[0]]+") does not match against a validation regex! ("+regex+")\nPlease input a new value that conforms to the required validation expression.")
+                    editRecord(record,entry[0])
 
         #File level information population
         b = Batch(args.root, args.item)
@@ -208,23 +235,23 @@ def main():
         try:
             #Lets see if we are in a real staging structure
             assert(len(listdir(args.item))==1)
-            assert(isdir(listdir(args.item)[0]))
+            assert(isdir(join(args.item,listdir(args.item)[0])))
             EADPath=join(args.item,listdir(args.item)[0])
-            assert(len(listdir(EADPath)==1))
-            assert(isdir(listdir(EADPath[0])))
-            accNoPath=join(EADPath,listdir(eadPath)[0])
-            assert(len(listdir(accNoPath)==2))
+            assert(len(listdir(EADPath))==1)
+            assert(isdir(join(EADPath,listdir(EADPath)[0])))
+            accNoPath=join(EADPath,listdir(EADPath)[0])
+            assert(len(listdir(accNoPath))==2)
             assert("data" in listdir(accNoPath) and "admin" in listdir(accNoPath))
-            ldrRecordPath=join(accNoPath,admin)+'record.json'
+            ldrRecordPath=join(accNoPath,"admin")+'/record.json'
         except AssertionError:
-            print("You don't seem to have pointed the script at a fully qualified staging structure. Please manually specify a location to save the LDR record to, other leave this line blank to save only the full record.")
+            print("You don't seem to have pointed the script at a fully qualified staging structure. Please manually specify a location to save the LDR record to, otherwise leave this line blank to save only the full record.")
             while ldrRecordPath == None:
                 ldrRecordPath=input("LDR Record Path: ")
+                if ldrRecordPath == "":
+                    break
                 if len(ldrRecordPath) > 0:
                     ldrRecordPath=abspath(expandvars(ldrRecordPath))
                     print("Attempted abspath "+ ldrRecordPath)
-                if ldrRecordPath == "":
-                    break
                 if not isdir(ldrRecordPath):
                     ldrRecordPath=None
 
