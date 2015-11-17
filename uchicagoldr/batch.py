@@ -27,7 +27,7 @@ class Batch(object):
         elif directory:
             assert exists(directory)
             self.directory_path = directory
-        self.root = root
+        self.directory_root = root
         self.items = []
 
     def add_item(self,new_item):

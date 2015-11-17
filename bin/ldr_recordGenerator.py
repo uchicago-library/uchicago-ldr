@@ -17,6 +17,7 @@ from os import _exit,listdir
 from os.path import isdir,join,abspath,expandvars,split,exists
 import json
 from re import match
+from hashlib import sha256
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -247,7 +248,7 @@ def main():
         for item in b.find_items(from_directory=True):
             itemDict={}
             item.set_accession(item.find_file_accession())
-            uid=join(item.get_accession(),item.find_canonical_filepath())  #This is where the UID should go, once we settle on how we are generating them
+            uid=sha256(join(item.get_accession(),item.find_canonical_filepath()).encode('utf-8')).hexdigest()  #This is where the UID should go, once we settle on how we are generating them
             itemDict['fileSize']=item.find_file_size()
             totalDigitalSize+=itemDict['fileSize']
             itemDict['fileMime']=item.find_file_mime_type()
