@@ -8,13 +8,18 @@ __status__ = "Prototype"
 __description__ = "This is a program for creating digital objects to " + \
                   "conform with a defined specification"
 
-from sys import argv, path
 
 from argparse import ArgumentParser
 from hashlib import md5
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit
+from re import compile as re_compile
+from sqlalchemy import Table
+
+from uchicagoldr.batch import Batch
+from uchicagoldr.item import Item
+from uchicagoldr.database import Database
 
 def main():
     parser = ArgumentParser(description="{description}". \
@@ -40,12 +45,27 @@ def main():
                          '-l','--log_loc',help="save logging to a file",
                          action="store_const",dest="log_loc",
                          const='./{progname}.log'. \
-                         format(progname=argv[0]) \
+                         format(progname=__file__) \
     )
     parser.add_argument( \
-                         "-" \
+                         '--db_url',help="Enter a db url",action='store' \
     )
-    
+    parser.add_argument( \
+                         '--root',help="Enter the root of the repository",
+                         action='store')
+    parser.add_argument( \
+                         '--object_pattern',help="Enter the regex pattern " + \
+                         "to match an object",
+                         action='store')
+    parser.add_argument( \
+                         '--page_pattern',help="Enter the regex pattern " + \
+                         "to match a page",
+                         action='store')
+    parser.add_argument( \
+                         'accessions',nargs="*",action='store',
+                         help="Enter 1 or more accession " + \
+                         "identifiers to process" \
+    )
     args = parser.parse_args()
     log_format = Formatter( \
                             "[%(levelname)s] %(asctime)s  " + \
@@ -67,9 +87,46 @@ def main():
         fh.setFormatter(log_format)
         logger.addHandler(fh)
     logger.addHandler(ch)
-    try:
+    db = Database(args.db_url, ['record','file'])
+    
+    class Record(db.base):
+            __table__ = Table('record', db.metadata, autoload=True)
         
-        logger.info("This is a template program.")
+    class File(db.base):
+            __table__ = Table('file', db.metadata, autoload=True)
+
+    query = db.session.query(File).filter(File.accession.in_(args.accessions))
+    if args.root:
+        batch = Batch(args.root, query = query)
+        items  = batch.find_items(from_db = True)
+        batch.set_items(items)
+    else:
+        raise ValueError("need to include a root")
+    try:
+        all_objects = []
+        for item in batch.get_items():
+            accession = item.find_file_accession()
+            item.set_accession(accession)            
+            canon = item.find_canonical_filepath()            
+            item.set_canonical_filepath(canon)
+
+            search_pattern = item.find_matching_object_pattern( \
+                    re_compile("(mvol)/(\w{4})/(\w{4})/(\w{4})/" +  
+                               "(mvol)-(\w{4})-(\w{4})-(\w{4})"))
+
+            if search_pattern.status == True:
+                potential_identifier = '-'.join(search_pattern.data.groups())
+                is_an_object_already_present = [x for x in all_objects \
+                                                if x.identifier == \
+                                                potential_identifier]
+                if is_an_object_already_present:
+                    logger.debug("found this id already")
+                else:
+                    logger.debug("this id is new!")
+                    new_object = DigitalObject(potential_identifier)
+                    all_objects.append(new_object)
+                logger.debug(potential_identifier)
+
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")

@@ -1,4 +1,4 @@
-from item import Item
+from uchicagoldr.item import Item
 from re import escape,split
 
 class TextDocument(Item):
@@ -13,7 +13,7 @@ class TextDocument(Item):
         Item.__init__(self,path,root)
 
     def find_terms(self):
-        with open(self.filepath,'r') as f:
+        with open(self.filepath,'r',errors='replace') as f:
             fileString=f.read()
         fileString=fileString.lower()
         regexPattern = '|'.join(map(escape, [" ","\n",".",",",";","'","-","\t","?","!",'(',')','[',']''\\']))

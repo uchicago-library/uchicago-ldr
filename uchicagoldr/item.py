@@ -18,6 +18,10 @@ class Item(object):
     md5 = ""
     accession = ""
     mimetype = ""
+    index_hash = ""
+    index_mimetype = ""
+    index_size = ""
+    canonical_filepath = ""
     can_read = False
     has_technical_md = False
     
@@ -31,6 +35,12 @@ class Item(object):
             return True
         else:
             return False
+
+    def get_root_path(self):
+        return self.root_path
+
+    def set_root_path(self,new_root_path):
+        self.root_path=new_root_path
 
     def set_readability(self, readable_notice):
         self.can_read = readable_notice
@@ -85,13 +95,23 @@ class Item(object):
     def set_file_path(self,new_file_path):
         self.file_path=new_file_path
 
+    def find_canonical_filepath(self):
+        assert self.accession
+        return relpath(self.filepath, join(self.root_path, self.accession))
+
+    def set_canonical_filepath(self, canonical_path):
+        self.canonical_filepath = canonical_path
+
+    def get_canonical_filepath(self):
+        return self.canonical_filepath
+        
     def find_file_accession(self):
         relative_path = relpath(self.filepath, self.root_path)
         accession, *tail = relative_path.split('/')
         return accession
     
     def set_accession(self, identifier):
-        if re_compile('\w{13}').match(identifier):
+        if re_compile('^\w{13}$').match(identifier):
             self.accession = identifier
         else:
             raise ValueError("You did not pass a valid noid")
@@ -157,16 +177,13 @@ class Item(object):
         return self.mimetype
 
     def find_technical_metadata(self):
-        fits_filepath = join(self.filepath,'.fits.xml')
-        if exists(fits_filepath):
+        fits_filepath = self.filepath+'.fits.xml'
+        stif_filepath = self.filepath+'.stif.txt'
+        if exists(fits_filepath) or exists(stif_filepath):
             self.has_technical_md = True
         else:
             pass
         return True
-
-    def find_a_group(self):
-        print("testing...")
-        return True     
 
     def get_destination_path(self, new_root_directory):
         path_sans_root = relpath(self.filepath, self.root_path)
@@ -177,76 +194,13 @@ class Item(object):
     def set_destination_path(self, new_path):
         self.destination = new_path
 
-    def move_into_new_location(self):
-        try:
-            move(self.filepath, self.destination)
-            return (True,None)
-        except Exception as e:
-            error = e
-            return (False,e)
-
-    def copy_source_directory_tree_to_destination(self):
-        destination_directories = dirname(self.destination).split('/')
-        directory_tree = ""
-        for f in destination_directories:
-            directory_tree = join(directory_tree,f)
-            if not exists(directory_tree):
-                try:
-                    mkdir(directory_tree,0o740)
-                except Exception as e:
-                    return (False,e)
-        return (True,None)
-    
-    def clean_out_source_directory_tree(self):
-        directory_tree = dirname(self.filepath)
-        for src_dir, dirs, files in walk(directory_tree):
-            try:
-                rmdir(src_dir)
-                return (True,None)
-            except Exception as e:
-                return (False,e)
-    
-    def find_object_identifier(self, control_type_data):
-        object_pattern = control_type_data.get('object')
-        assert object_pattern
-        pattern_search = re_compile(object_pattern).search(self.filepath)
-        if pattern_search:
-            return namedtuple("data", "valid keys")( \
-                                                     True,
-                                                     pattern_search.groups() \
-            )
+    def find_matching_object_pattern(self, regex_pattern):
+        assert isinstance(regex_pattern, type(re_compile("foo")))
+        assert self.canonical_filepath
+        matchable = regex_pattern.search(self.canonical_filepath)
+        if matchable:
+            return namedtuple("object_pattern","status data")(True,matchable)
         else:
-            return namedtuple("data", "valid keys")( \
-                                                     False,
-                                                     None \
-            )
+            return namedtuple("object_pattern","status data")(False,None)
+        
 
-    def classify_file_type(self, control_type_data):
-        page_pattern = control_type_data.get('page_file')
-        object_pattern = control_type_data.get('object_file')
-        page_pattern_search = re_compile(page_pattern).search(self.filepath)
-        object_pattern_search = re_compile(object_pattern). \
-                                search(self.filepath)
-        pagenumber = None
-        if page_pattern_search:
-            
-            groups = page_pattern_search.groups()
-            pagenumber = groups[-2]
-            pagenumber = pagenumber.lstrip('0')
-            tag = "page_file"
-        elif object_pattern:
-            tag = "object_file"
-        else:
-            tag = "undefinable"
-        self.tag = tag
-        if pagenumber:
-            self.pagenumber = pagenumber
-
-    def set_destination_ownership(self, user_name, group_name):
-        uid = getpwnam(user_name).pw_uid
-        gid = getgrnam(group_name).gr_gid
-        try:
-            chown(self.destination, uid, gid)
-            return (True,None)
-        except Exception as e:
-            return (False,e)

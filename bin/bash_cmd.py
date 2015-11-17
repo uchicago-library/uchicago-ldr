@@ -15,8 +15,8 @@ class BashCommand(object):
     def run_command(self):
         assert isinstance(self.args,list)
         try:
-            cmd = run(self.args, stdout = PIPE, stderr = STDOUT, timeout=self.timeout,universal_newlines=True)
-            self.command_ran = True
+            cmd = run(self.args, stdout = PIPE, stderr = STDOUT, timeout=self.timeout)
+            command_ran = True
         except Exception as e:
             self.cmd_out = e
             return(False,e)
@@ -28,7 +28,7 @@ class BashCommand(object):
         return (True, cmd)
 
     def get_data(self):
-        return (self.command_ran, self.cmd_out)
+        return self.command_ran, self.cmd_out
 
     def get_args(self):
         return self.args

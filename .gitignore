@@ -4,9 +4,12 @@ bin/__pycache__/*
 uchicagoldr/*pyc
 bin/*pyc
 bin/#*#
+bin/*#*
 uchicagoldr/#*$
+uchicagoldr/*#*
 uchicagoldr/*~
 bin/*~
 #*#
 *~
 env/*
+.DS_Store
