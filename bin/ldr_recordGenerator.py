@@ -253,6 +253,14 @@ def main():
             totalDigitalSize+=itemDict['fileSize']
             itemDict['fileMime']=item.find_file_mime_type()
             itemDict['fileHash']=item.find_sha256_hash()
+            
+            if ".presform" in item.find_file_name():
+                presStable="True"
+            else:
+                presStable="False"
+
+            itemDict['fileStable']=presStable
+
             record['fileInfo'][uid]=itemDict
         record['totalDigitalSize']=totalDigitalSize
         
