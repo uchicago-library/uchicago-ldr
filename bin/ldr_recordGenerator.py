@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 from logging import DEBUG, FileHandler, Formatter, getLogger, \
     INFO, StreamHandler
 from os import _exit,listdir
-from os.path import isdir,join,abspath,expandvars
+from os.path import isdir,join,abspath,expandvars,split,exists
 import json
 from re import match
 
@@ -26,6 +26,25 @@ from uchicagoldr.forms.recordFieldsValidation import RecordFieldsValidation
 from uchicagoldr.forms.ldrFields import LDRFields
 from uchicagoldr.forms.digitalAcquisitionRead import ReadAcquisitionRecord
 from uchicagoldr.forms.digitalAcquisitionMap import AcquisitionRecordMapping
+
+def writeNoClobber(record,filepath):
+    path,filename=split(filepath)
+    try:
+        assert(isdir(path))
+        assert(len(filename)>0)
+    except AssertionError:
+        return False
+
+    while exists(filepath):
+        if filepath[-1].isdigit():
+            nextNum=int(filepath[-1])+1
+            filepath=filepath[0:-1]+str(nextNum)
+        else:
+            filepath=filepath+".1"
+
+    with open(filepath,'w') as f:
+        json.dump(record,f,indent=4,sort_keys=True)
+    return True
 
 def instantiateRecord():
     record={}
@@ -162,7 +181,7 @@ def main():
                         "directory path that you need to validate against" + \
                         " a type of controlled collection"
     )
-    parser.add_argument("--out-file",'-o',help="The location where the full record should be written to disk.",required=True)
+    parser.add_argument("--out-file",'-o',help="The location where the full record should be written to disk.",required=True,action="append")
     parser.add_argument("item", help="Enter a noid for an accession or a " + \
                         "directory path that you need to validate against" + \
                         " a type of controlled collection"
@@ -237,8 +256,8 @@ def main():
         record['totalDigitalSize']=totalDigitalSize
         
         #Write two records, one which contains the entirety of the record, including potential internal information, to an internal source, and another which contains information pertinent to the LDR into the admin directory
-        with open(args.out_file,'w') as f:
-            json.dump(record,f,indent=4,sort_keys=True)
+        for filepath in args.out_file:
+            assert(writeNoClobber(record,filepath))
 
         pubRecord={}
         for entry in LDRFields():
@@ -269,8 +288,7 @@ def main():
                     ldrRecordPath=None
 
         if ldrRecordPath != "":
-            with open(ldrRecordPath,'w') as f:
-                json.dump(pubRecord,f,indent=4,sort_keys=True)
+            writeNoClobber(pubRecord,ldrRecordPath)
         else:
             print("LDR Record generation skipped.")
 
