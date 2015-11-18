@@ -21,13 +21,13 @@ from hashlib import sha256
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
-from uchicagoldr.forms.recordFields import RecordFields
-from uchicagoldr.forms.recordFieldsBooleans import RecordFieldsBooleans
-from uchicagoldr.forms.recordFieldsValidation import RecordFieldsValidation
-from uchicagoldr.forms.recordFieldsDefaults import RecordFieldsDefaults
-from uchicagoldr.forms.ldrFields import LDRFields
-from uchicagoldr.forms.digitalAcquisitionRead import ReadAcquisitionRecord
-from uchicagoldr.forms.digitalAcquisitionMap import AcquisitionRecordMapping
+from uchicagoldrRecords.recordFields import RecordFields
+from uchicagoldrRecords.recordFieldsBooleans import RecordFieldsBooleans
+from uchicagoldrRecords.recordFieldsValidation import RecordFieldsValidation
+from uchicagoldrRecords.recordFieldsDefaults import RecordFieldsDefaults
+from uchicagoldrRecords.ldrFields import LDRFields
+from uchicagoldrRecords.digitalAcquisitionRead import ReadAcquisitionRecord
+from uchicagoldrRecords.digitalAcquisitionMap import AcquisitionRecordMapping
 
 def writeNoClobber(record,filepath):
     path,filename=split(filepath)
