@@ -24,6 +24,7 @@ from uchicagoldr.item import Item
 from uchicagoldr.forms.recordFields import RecordFields
 from uchicagoldr.forms.recordFieldsBooleans import RecordFieldsBooleans
 from uchicagoldr.forms.recordFieldsValidation import RecordFieldsValidation
+from uchicagoldr.forms.recordFieldsDefaults import RecordFieldsDefaults
 from uchicagoldr.forms.ldrFields import LDRFields
 from uchicagoldr.forms.digitalAcquisitionRead import ReadAcquisitionRecord
 from uchicagoldr.forms.digitalAcquisitionMap import AcquisitionRecordMapping
@@ -63,16 +64,6 @@ def selectValue(field,existingValue,newValue):
             return existingValue
         else:
             return newValue
-
-def defaults():
-    return { 'dasRecBy':'balsamo', \
-             'fiscalYear':'2016', \
-             'rights':"Copyright restrictions may apply.", \
-             'department':"Special Collections", \
-             'permittedUseAccess':'False', \
-             'permittedUseDiscover':'True', \
-             'fileInfo':{}, \
-             }
 
 def populateEmpties(record):
     for entry in record:
@@ -169,6 +160,15 @@ def meldRecord(record,target,reader,mapper):
             else:
                 record[entry[0]]=selectValue(entry[0],record[entry[0]],newDict[entry[1]])
 
+def dummyReader(target):
+    return target
+
+def dummyMapper():
+    dummyMap=[]
+    for entry in RecordFields():
+        dummyMap.append((entry,entry))
+    return dummyMap
+
 def generateFileEntries(root,item):
     fileInfoDict={}
     b = Batch(root, item)
@@ -259,41 +259,49 @@ def main():
         logger.addHandler(fh)
     logger.addHandler(ch)
     try:
+        print("BEGINNING")
         #Keep in mind that population order here matters a lot in terms of how much input the user will be asked for.
 
         #Instantiate a blank record with all our fields set to a blank string, for bounding loops and no funny business when we try and print it.
+        print("Instantiating Record")
         record=instantiateRecord()
 
         #Map our defaults right into the record.
-        #TODO: Move default mapping into form library
-        for entry in defaults():
-            record[entry]=defaults()[entry]
+        print("Mapping defaults")
+        meldRecord(record,RecordFieldsDefaults(),dummyReader,dummyMapper)
 
         #Read all the digital acquisition forms, populate the record with their info, address conflicts
+        print("Reading and mapping digital acquisition records.")
         for acqRecord in args.acquisition_record:
             meldRecord(record,acqRecord,ReadAcquisitionRecord,AcquisitionRecordMapping)
 
         #Manual input loop
+        print("Beginning Manual Input Loop")
         manualInput(record)
 
         #Run some automated processing over the record to clean up certain values if required.
         print("Beginning attempts at automated boolean interpretation")
-
         record=booleanLoop(record,RecordFieldsBooleans())
         #Validate the record fields against their stored regexes
+        print("Validating...")
         record=validate(record,RecordFieldsValidation())
 
         #File level information population
+        print("Generating file info...")
         record['fileInfo']=generateFileEntries(args.root,args.item)
 
+        print("Computing total size")
         record['totalDigitalSize']=computeTotalFileSizeFromRecord(record)
         
         #Write two records, one which contains the entirety of the record, including potential internal information, to an internal source, and another which contains information pertinent to the LDR into the admin directory
+        print("Writing whole record to out files.")
         for filepath in args.out_file:
             assert(writeNoClobber(record,filepath))
 
+        print("Creating subrecord")
         pubRecord=createSubRecord(record,LDRFields())
 
+        print("Attempting to write LDR subrecord into staging structure.")
         ldrRecordPath=None
         try:
             #Lets see if we are in a real (and properly formed) staging structure
@@ -320,10 +328,13 @@ def main():
 
         if ldrRecordPath != "":
             writeNoClobber(pubRecord,ldrRecordPath)
+            print("LDR Record written")
         else:
             print("LDR Record generation skipped.")
 
         print(json.dumps(record,indent=4,sort_keys=True))
+
+        print("COMPLETE")
 
         return 0
     except KeyboardInterrupt:
