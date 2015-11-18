@@ -146,7 +146,57 @@ def validate(record,validator):
                 print(entry[0]+" ("+record[entry[0]]+") does not match against a validation regex! ("+regex+")\nPlease input a new value that conforms to the required validation expression.")
                 editRecord(record,entry[0])
     return record
-    
+
+def booleanLoop(record,bools):
+    for entry in bools:
+        suggestion=stringToBool(record[entry])
+        if suggestion != record[entry]:
+            record[entry]=selectValue(entry,record[entry],suggestion)
+    return record
+
+def createSubRecord(record,fields):
+    subRecord={}
+    for field in fields:
+        subRecord[field]=record[field]
+    return subRecord
+
+def meldRecord(record,target,reader,mapper):
+    newDict=reader(target)
+    for entry in mapper():
+        if entry[1] in newDict:
+            if record[entry[0]]=="" or record[entry[0]] == newDict[entry[1]]:
+                record[entry[0]]=newDict[entry[1]]
+            else:
+                record[entry[0]]=selectValue(entry[0],record[entry[0]],newDict[entry[1]])
+
+def generateFileEntries(root,item):
+    fileInfoDict={}
+    b = Batch(root, item)
+    totalDigitalSize=0
+    for item in b.find_items(from_directory=True):
+        itemDict={}
+        item.set_accession(item.find_file_accession())
+        uid=sha256(join(item.get_accession(),item.find_canonical_filepath()).encode('utf-8')).hexdigest()
+        itemDict['fileSize']=item.find_file_size()
+        totalDigitalSize+=itemDict['fileSize']
+        itemDict['fileMime']=item.find_file_mime_type()
+        itemDict['fileHash']=item.find_sha256_hash()
+            
+        if ".presform" in item.find_file_name():
+            presStable="True"
+        else:
+            presStable="False"
+
+        itemDict['fileStable']=presStable
+
+        fileInfoDict[uid]=itemDict
+    return fileInfoDict
+
+def computeTotalFileSizeFromRecord(record):
+    totalSize=0
+    for entry in record['fileInfo']:
+        totalSize+=record['fileInfo'][entry]['fileSize']
+    return totalSize
 
 def main():
     # start of parser boilerplate
@@ -221,56 +271,28 @@ def main():
 
         #Read all the digital acquisition forms, populate the record with their info, address conflicts
         for acqRecord in args.acquisition_record:
-            acqDict=ReadAcquisitionRecord(acqRecord)
-            for entry in AcquisitionRecordMapping():
-                if entry[1] in acqDict:
-                    if record[entry[0]]=="" or record[entry[0]] == acqDict[entry[1]]:
-                        record[entry[0]]=acqDict[entry[1]]
-                    else:
-                        record[entry[0]]=selectValue(entry[0], record[entry[0]], acqDict[entry[1]])
+            meldRecord(record,acqRecord,ReadAcquisitionRecord,AcquisitionRecordMapping)
 
         #Manual input loop
         manualInput(record)
 
         #Run some automated processing over the record to clean up certain values if required.
         print("Beginning attempts at automated boolean interpretation")
-        for entry in RecordFieldsBooleans():
-            suggestion=stringToBool(record[entry])
-            if suggestion != record[entry]:
-                record[entry]=selectValue(entry,record[entry],suggestion)
 
+        record=booleanLoop(record,RecordFieldsBooleans())
         #Validate the record fields against their stored regexes
         record=validate(record,RecordFieldsValidation())
 
         #File level information population
-        b = Batch(args.root, args.item)
-        totalDigitalSize=0
-        for item in b.find_items(from_directory=True):
-            itemDict={}
-            item.set_accession(item.find_file_accession())
-            uid=sha256(join(item.get_accession(),item.find_canonical_filepath()).encode('utf-8')).hexdigest()  #This is where the UID should go, once we settle on how we are generating them
-            itemDict['fileSize']=item.find_file_size()
-            totalDigitalSize+=itemDict['fileSize']
-            itemDict['fileMime']=item.find_file_mime_type()
-            itemDict['fileHash']=item.find_sha256_hash()
-            
-            if ".presform" in item.find_file_name():
-                presStable="True"
-            else:
-                presStable="False"
+        record['fileInfo']=generateFileEntries(args.root,args.item)
 
-            itemDict['fileStable']=presStable
-
-            record['fileInfo'][uid]=itemDict
-        record['totalDigitalSize']=totalDigitalSize
+        record['totalDigitalSize']=computeTotalFileSizeFromRecord(record)
         
         #Write two records, one which contains the entirety of the record, including potential internal information, to an internal source, and another which contains information pertinent to the LDR into the admin directory
         for filepath in args.out_file:
             assert(writeNoClobber(record,filepath))
 
-        pubRecord={}
-        for entry in LDRFields():
-            pubRecord[entry]=record[entry]
+        pubRecord=createSubRecord(record,LDRFields())
 
         ldrRecordPath=None
         try:
