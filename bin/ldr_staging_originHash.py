@@ -24,8 +24,7 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
-def getImmediateSubDirs(path):
-    return [name for name in listdir(path) if isdir(join(path,name))]
+from uchicagoldrStaging.lib import getImmediateSubDirs
 
 def main():
     # start of parser boilerplate
@@ -125,13 +124,8 @@ def main():
         existingOriginalFileHashes={}
         originalFileHashes={}
         logger.info("Hashing original files")
-        if exists(join(destinationAdminFolder,'fixityFromOrigin.txt')):
-            with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'r') as f:
-                for line in f.readlines():
-                    if not args.rehash:
-                        splitLine=line.split('\t')
-                        if splitLine[1] != "ERROR":
-                            existingOriginalFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
+        if exists(join(destinationAdminFolder,'fixityFromOrigin.txt')) and not args.rehash:
+            existingOriginalFileHashes=readExistingFixityLog(join(destinationAdminFolder,'fixityFromOrigin.txt'))
         with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'a') as f:
             for item in originalFiles.find_items(from_directory=True):
                 if item.test_readability():
