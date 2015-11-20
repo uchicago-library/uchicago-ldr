@@ -24,6 +24,8 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
+from uchicagoldrStaging.validation.validateBase import validateBase
+
 def getImmediateSubDirs(path):
     return [name for name in listdir(path) if isdir(join(path,name))]
 
@@ -107,12 +109,12 @@ def main():
         logger.critical("Root appears to not conform to rsync path specs.")
         exit(1)
     try:
-        assert(isdir(args.dest_root))
-        shouldBeEAD=getImmediateSubDirs(args.dest_root)
-        assert(len(shouldBeEAD)==1)
-        shouldBeAccNo=getImmediateSubDirs(join(args.dest_root,shouldBeEAD[0]))
-        assert(len(shouldBeAccNo)==1)
-        stageRoot=join(join(args.dest_root,shouldBeEAD[0]),shouldBeAccNo[0])
+        validation=validateBase(args.root)
+        if validation[0] != True:
+            logger.warn("Your staging root isn't valid!")
+        else:
+            stageRoot=join(validation[1:])
+
         destinationAdminRoot=join(stageRoot,'admin/')
         destinationDataRoot=join(stageRoot,'data/')
         prefix=args.prefix
