@@ -1,5 +1,5 @@
 
-def validateBase(path,shouldBeRoot=None,shouldBeArk=None,shouldBeEAD=None,shouldBeAccNo=None):
+def ValidateBase(path,shouldBeRoot=None,shouldBeArk=None,shouldBeEAD=None,shouldBeAccNo=None):
     from os import listdir
     from os.path import isdir,join,split
 

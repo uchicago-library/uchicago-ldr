@@ -1,4 +1,4 @@
-def readExistingFixityLog(path):
+def ReadExistingFixityLog(path):
     existingFixity={}
     with open(path,'r') as f:
         for line in f.readlines():
@@ -10,5 +10,8 @@ def readExistingFixityLog(path):
                     go=False
             if not go:
                 continue
-            existingFixity[splitLine[0]]=[splitLine[1],splitLine[2]]
+            try:
+                existingFixity[splitLine[0]]=[splitLine[1],splitLine[2]]
+            except IndexError:
+                pass
     return existingFixity
