@@ -15,7 +15,7 @@ class Batch(object):
 
     items = []
     directory_path = ""
-    directory_root = ""
+    root = ""
     identifier = ""
 
     def __init__(self, root, directory = None,
@@ -71,7 +71,7 @@ class Batch(object):
             node=flat_list.pop()
             fullpath=join(directory,node)
             if isfile(fullpath):
-                i=Item(fullpath,self.directory_root)
+                i=Item(fullpath,self.root)
                 yield i
             elif isdir(fullpath):
                 for child in listdir(fullpath):
@@ -96,18 +96,18 @@ class Batch(object):
         return self.items
 
     def convert_to_relative_path(self, a_path):
-        if not self.directory_root:
+        if not self.root:
             raise ValueError("There is no directory root on this batch!")
         else:
             directory_relative_to_root = relpath(self.directory_path,
-                                                 self.directory_root)
+                                                 self.root)
         return directory_relative_to_root
 
     def set_root_path(self, a_path):
         if not isabs(a_path):
             raise ValueError("The path you entered is not absolute!")
         else:
-            self.directory_root = a_path
+            self.root = a_path
         return True
 
     def define_path(self, a_path):
@@ -125,10 +125,10 @@ class Batch(object):
             self.accession = accession
         return True
 
-    def collect_from_directory(self, directory_path, directory_root):
+    def collect_from_directory(self, directory_path, root):
         assert isinstance(directory_path, str)
         self.define_path(directory_path)
-        self.set_root_path(directory_root)
+        self.set_root_path(root)
         directory_relative_to_root = self. \
                                      convert_to_relative_path(directory_path) 
         self.get_accession_from_relative_path(directory_relative_to_root)
@@ -138,12 +138,12 @@ class Batch(object):
         self.items = generator_of_items
             
     def collect_from_database(self, database_object, queryable, query_object,
-                              directory_root):
+                              root):
         query = database_object.session.query(queryable).filter(query_object)
         if query.count() > 0:
             generator_of_items = self.walk_database_query_picking_files( \
                                                                 query, \
-                                                                directory_root,
+                                                                root,
             )
             self.items = generator_of_items
         else:
