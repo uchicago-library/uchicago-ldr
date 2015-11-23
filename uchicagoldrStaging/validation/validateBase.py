@@ -2,6 +2,7 @@
 def ValidateBase(path,shouldBeRoot=None,shouldBeArk=None,shouldBeEAD=None,shouldBeAccNo=None):
     from os import listdir
     from os.path import isdir,join,split
+    from re import match
 
     observedRoot=None
     observedArk=None
@@ -29,6 +30,8 @@ def ValidateBase(path,shouldBeRoot=None,shouldBeArk=None,shouldBeEAD=None,should
         if shouldBeArk != observedArk:
             return (False,observedRoot,observedArk,observedEAD,observedAccNo)
     shouldBeArk=observedArk
+    if not match("^\w{13}$",shouldBeArk):
+        return (False,observedRoot,observedArk,observedEAD,observedAccNo)
 
     if len(listdir(join(shouldBeRoot,shouldBeArk)))==1:
         observedEAD=listdir(join(observedRoot,shouldBeArk))[0]
@@ -47,6 +50,8 @@ def ValidateBase(path,shouldBeRoot=None,shouldBeArk=None,shouldBeEAD=None,should
         if shouldBeAccNo != observedAccNo:
             return (False,observedRoot,observedArk,observedEAD,observedAccNo)
     shouldBeAccNo=observedAccNo
+    if not match("^\d{4}-\d{3}$",shouldBeAccNo):
+        return (False,observedRoot,observedArk,observedEAD,observedAccNo)
 
     for folder in ['admin','data']:
         if folder not in listdir(join(shouldBeRoot,shouldBeArk,shouldBeEAD,shouldBeAccNo)):

@@ -19,12 +19,13 @@ from os.path import isdir
 from os.path import join
 from os.path import relpath
 from os.path import exists
+from os.path import split
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
-from uchicagoldrStaging.validation.validateBase import validateBase
+from uchicagoldrStaging.validation.validateBase import ValidateBase
 from uchicagoldrStaging.population.prefixToFolder import prefixToFolder
 from uchicagoldrStaging.lib import getImmediateSubDirs
 
@@ -108,11 +109,12 @@ def main():
         logger.critical("Root appears to not conform to rsync path specs.")
         exit(1)
     try:
-        validation=validateBase(args.dest_root)
+        validation=ValidateBase(args.dest_root)
         if validation[0] != True:
-            logger.warn("Your staging root isn't valid!")
+            logger.critical("Your staging root isn't valid!")
+            exit(1)
         else:
-            stageRoot=join(validation[1],validation[2],validation[3],validation[4])
+            stageRoot=join(*validation[1:])
 
         destinationAdminRoot=join(stageRoot,'admin/')
         destinationDataRoot=join(stageRoot,'data/')
@@ -180,7 +182,7 @@ def main():
         logger.info("Rsync complete.")
 
         if args.chain:
-            logger.info(prefix+nextNum)
+            logger.info(split(destinationDataFolder)[1])
 
         return 0
     except KeyboardInterrupt:
