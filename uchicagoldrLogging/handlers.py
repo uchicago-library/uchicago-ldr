@@ -1,4 +1,4 @@
-def DefaultTerm():
+def DefaultTermHandler():
     from logging import StreamHandler
 
     from uchicagoldrLogging.formatters import default
@@ -8,7 +8,7 @@ def DefaultTerm():
     terminalHandler.setFormatter(default())
     return terminalHandler
 
-def InfoTerm():
+def InfoTermHandler():
     from logging import StreamHandler
 
     from uchicagoldrLogging.formatters import default
@@ -18,7 +18,7 @@ def InfoTerm():
     terminalHandler.setFormatter(default())
     return terminalHandler
 
-def DebugTerm():
+def DebugTermHandler():
     from logging import StreamHandler
 
     from uchicagoldrLogging.formatters import default
@@ -28,7 +28,19 @@ def DebugTerm():
     terminalHandler.setFormatter(default())
     return terminalHandler
 
-def DefaultFile(path):
+def DefaultTermHandlerAtLevel(level):
+    from logging import StreamHandler
+
+    from uchicagoldrLogging.formatters import default
+    
+    assert(level in ['DEBUG','INFO','WARN','ERROR','CRITICAL'])
+
+    terminalHandler=StreamHandler()
+    terminalHandler.setLevel(level)
+    terminalHandler.setFormatter(default())
+    return terminalHandler
+
+def DefaultFileHandler(path):
     from logging import FileHandler
 
     from uchicagoldrLogging.formatters import default
@@ -38,7 +50,7 @@ def DefaultFile(path):
     fileHandler.setFormatter(default())
     return fileHandler
 
-def InfoFile(path):
+def InfoFileHandler(path):
     from logging import FileHandler
 
     from uchicagoldrLogging.formatters import default
@@ -48,12 +60,24 @@ def InfoFile(path):
     fileHandler.setFormatter(default())
     return fileHandler
 
-def DebugFile(path):
+def DebugFileHandler(path):
     from logging import FileHandler
 
     from uchicagoldrLogging.formatters import default
 
     fileHandler=FileHandler(path)
-    fileHandler.setLevel('INFO')
+    fileHandler.setLevel('DEBUG')
+    fileHandler.setFormatter(default())
+    return fileHandler
+
+def DefaultFileHandlerAtLevel(path,level):
+    from logging import FileHandler
+
+    from uchicagoldrLogging.formatters import default
+
+    assert(level in ['DEBUG','INFO','WARN','ERROR','CRITICAL'])
+
+    fileHandler=FileHandler(path)
+    fileHandler.setLevel(level)
     fileHandler.setFormatter(default())
     return fileHandler
