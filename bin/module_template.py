@@ -115,7 +115,7 @@ def main():
             logger.removeHandler(fileHandler)
             fileHandler=DebugFileHandler(args.log_loc)
             logger.addHandler(fileHandler)
-    ### End user specific log instantiation
+    ### End user specified log instantiation ###
     try:
         ### Begin module code ###
         b = Batch(args.root, args.item)
