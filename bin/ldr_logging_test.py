@@ -74,13 +74,6 @@ def main():
                          dest="log_loc",
                          \
     )
-    parser.add_argument("item", help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
-                        " a type of controlled collection"
-    )
-    parser.add_argument("root",help="Enter the root of the directory path",
-                        action="store"
-    )
     args = parser.parse_args()
 
     ### Begin argument post processing, if required ###
@@ -119,9 +112,11 @@ def main():
     try:
         logger.info("BEGINS")
         ### Begin module code ###
-        b = Batch(args.root, args.item)
-        for item in b.find_items(from_directory=True):
-            print(item.get_file_path())
+        logger.debug('Debug Message')
+        logger.info('Info Message')
+        logger.warn('Warn Message')
+        logger.error('Error Message')
+        logger.critical('Critical Message')
             
         logger.info("ENDS: COMPLETE")
         return 0

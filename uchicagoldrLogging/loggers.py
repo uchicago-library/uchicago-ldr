@@ -2,6 +2,8 @@ def MasterLogger():
     from logging import Formatter,getLogger
     from logging.handlers import SocketHandler
 
+    from uchicagoldrLogging.formatters import verbose 
+
     remoteAddress='localhost'
     remotePort='notarealport'
 
@@ -10,5 +12,5 @@ def MasterLogger():
 
     networkHandler=SocketHandler(remoteAddress,remotePort)
     logger.addHandler(networkHandler)
-
+    
     return logger
