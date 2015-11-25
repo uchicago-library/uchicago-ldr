@@ -23,9 +23,11 @@ from os.path import split,exists
 ### Local package imports begin ###
 from uchicagoldrLogging.loggers import MasterLogger
 from uchicagoldrLogging.handlers import DefaultTermHandler,DebugTermHandler,DefaultFileHandler,DebugFileHandler,DefaultTermHandlerAtLevel,DefaultFileHandlerAtLevel
+from uchicagoldrLogging.filters import UserAndIPFilter
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
+
 ### Local package imports end ###
 
 
@@ -42,8 +44,10 @@ def main():
     ### Application specific log instantation begins ###
     global logger
     logger=masterLog.getChild(__name__)
+    f=UserAndIPFilter()
     termHandler=DefaultTermHandler()
     logger.addHandler(termHandler)
+    logger.addFilter(f)
     ### Application specific log instantation ends ###
 
     ### Parser instantiation begins ###
@@ -117,15 +121,14 @@ def main():
         logger.warn('Warn Message')
         logger.error('Error Message')
         logger.critical('Critical Message')
-            
+        ### End module code ###
         logger.info("ENDS: COMPLETE")
         return 0
-        ### End module code ###
     except KeyboardInterrupt:
         logger.error("ENDS: Program aborted manually")
         return 131
     except Exception as e:
-        logger.critical("ENDS: Exception ("+e+")")
+        logger.critical("ENDS: Exception ("+str(e)+")")
         return 1
 if __name__ == "__main__":
     _exit(main())

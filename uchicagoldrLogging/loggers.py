@@ -5,7 +5,7 @@ def MasterLogger():
     from uchicagoldrLogging.formatters import verbose 
 
     remoteAddress='localhost'
-    remotePort='notarealport'
+    remotePort='9020'
 
     logger=getLogger('lib.uchicago.repository.logger')
     logger.setLevel('DEBUG')
