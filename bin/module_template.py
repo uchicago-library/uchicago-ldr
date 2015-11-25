@@ -23,6 +23,7 @@ from os.path import split,exists
 ### Local package imports begin ###
 from uchicagoldrLogging.loggers import MasterLogger
 from uchicagoldrLogging.handlers import DefaultTermHandler,DebugTermHandler,DefaultFileHandler,DebugFileHandler,DefaultTermHandlerAtLevel,DefaultFileHandlerAtLevel
+from uchicagoldrLogging.filters import UserAndIPFilter
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
@@ -42,8 +43,10 @@ def main():
     ### Application specific log instantation begins ###
     global logger
     logger=masterLog.getChild(__name__)
+    f=UserAndIPFilter()
     termHandler=DefaultTermHandler()
     logger.addHandler(termHandler)
+    logger.addFilter(f)
     ### Application specific log instantation ends ###
 
     ### Parser instantiation begins ###
@@ -85,11 +88,11 @@ def main():
 
     ### Begin argument post processing, if required ###
     if args.verbosity and args.verbosity not in ['DEBUG','INFO','WARN','ERROR','CRITICAL']:
-        logger.error("You did not pass a valid argument to the verbosity flag! Valid arguments include: 'DEBUG','INFO','WARN','ERROR', and 'CRITICAL'")
+        logger.critical("You did not pass a valid argument to the verbosity flag! Valid arguments include: 'DEBUG','INFO','WARN','ERROR', and 'CRITICAL'")
         return(1)
     if args.log_loc:
         if not exists(split(args.log_loc)[0]):
-            logger.error("The specified log location does not exist!")
+            logger.critical("The specified log location does not exist!")
             return(1)
     ### End argument post processing ###
 
@@ -123,14 +126,14 @@ def main():
         for item in b.find_items(from_directory=True):
             print(item.get_file_path())
             
+        ### End module code ###
         logger.info("ENDS: COMPLETE")
         return 0
-        ### End module code ###
     except KeyboardInterrupt:
         logger.error("ENDS: Program aborted manually")
         return 131
     except Exception as e:
-        logger.critical("ENDS: Exception ("+e+")")
+        logger.critical("ENDS: Exception ("+str(e)+")")
         return 1
 if __name__ == "__main__":
     _exit(main())
