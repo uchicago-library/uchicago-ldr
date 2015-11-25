@@ -5,6 +5,7 @@ import socketserver
 import struct
 
 from uchicagoldrLogging.filters import ManualIPFilter
+from uchicagoldrLogging.formatters import server
 
 # https://docs.python.org/3/howto/logging-cookbook.html#sending-and-receiving-logging-events-across-a-network
 
@@ -78,8 +79,18 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
             abort = self.abort
 
 def main():
-    logging.basicConfig(
-        format="[%(levelname)8s] [%(asctime)s] [%(reportedip)15s] [%(manualip)15s] [%(user)s] [%(process)d] [%(filename)s] [%(name)s] = %(message)s",datefmt="%Y-%m-%dT%H:%M:%S")
+    handlers=[]
+    f=server()
+    
+    termHandler=logging.StreamHandler()
+    termHandler.setFormatter(f)
+    handlers.append(termHandler)
+    
+    fileHandler=logging.handlers.RotatingFileHandler('/Users/balsamo/LDR_Logs/log.txt',maxBytes=1000000000,backupCount=5)
+    fileHandler.setFormatter(f)
+    handlers.append(fileHandler)
+
+    logging.basicConfig(handlers=handlers)
     tcpserver = LogRecordSocketReceiver()
     print('About to start TCP server...')
     tcpserver.serve_until_stopped()

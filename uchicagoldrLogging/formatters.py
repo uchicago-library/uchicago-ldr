@@ -7,3 +7,7 @@ def verbose():
 def default():
     from logging import Formatter
     return Formatter("[%(levelname)8s] [%(asctime)s] = %(message)s",datefmt="%Y-%m-%dT%H:%M:%S") 
+
+def server():
+    from logging import Formatter
+    return Formatter("[%(levelname)8s] [%(asctime)s] [%(reportedip)15s] [%(manualip)15s] [%(user)s] [%(process)d] [%(filename)s] [%(name)s] [%(relativeCreated)d] = %(message)s",datefmt="%Y-%m-%dT%H:%M:%S")
