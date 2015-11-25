@@ -4,7 +4,7 @@ import logging.handlers
 import socketserver
 import struct
 
-from uchicagoldrLogging.formatters import verbose
+from uchicagoldrLogging.filters import ManualIPFilter
 
 # https://docs.python.org/3/howto/logging-cookbook.html#sending-and-receiving-logging-events-across-a-network
 
@@ -31,6 +31,7 @@ class LogRecordStreamHandler(socketserver.StreamRequestHandler):
                 chunk = chunk + self.connection.recv(slen - len(chunk))
             obj = self.unPickle(chunk)
             record = logging.makeLogRecord(obj)
+            ManualIPFilter().filter(record,self.client_address[0])
             self.handleLogRecord(record)
 
     def unPickle(self, data):
@@ -44,10 +45,6 @@ class LogRecordStreamHandler(socketserver.StreamRequestHandler):
         else:
             name = record.name
         logger = logging.getLogger(name)
-#        terminalHandler=logging.StreamHandler()
-#        terminalHandler.setLevel('DEBUG')
-#        terminalHandler.setFormatter(verbose())
-#        logger.addHandler(terminalHandler)
         # N.B. EVERY record gets logged. This is because Logger.handle
         # is normally called AFTER logger-level filtering. If you want
         # to do filtering, do it at the client end to save wasting
@@ -82,7 +79,7 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
 
 def main():
     logging.basicConfig(
-        format="[%(levelname)8s] [%(asctime)s] [%(ip)15s] [%(user)s] [%(filename)s] [%(name)s] = %(message)s",datefmt="%Y-%m-%dT%H:%M:%S")
+        format="[%(levelname)8s] [%(asctime)s] [%(reportedip)15s] [%(manualip)15s] [%(user)s] [%(process)d] [%(filename)s] [%(name)s] = %(message)s",datefmt="%Y-%m-%dT%H:%M:%S")
     tcpserver = LogRecordSocketReceiver()
     print('About to start TCP server...')
     tcpserver.serve_until_stopped()
