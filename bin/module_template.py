@@ -1,7 +1,7 @@
 
 __author__ = "[name]"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = ").0.0"
+__version__ = "0.0.0"
 __maintainer__ = "[name]"
 __email__ = "[email]"
 __status__ = "[Prototype/Development/Production/etc]"
