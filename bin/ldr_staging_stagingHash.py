@@ -24,8 +24,10 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
-def getImmediateSubDirs(path):
-    return [name for name in listdir(path) if isdir(join(path,name))]
+from uchicagoldrStaging.lib import getImmediateSubDirs
+from uchicagoldrStaging.validation.validateBase import ValidateBase
+from uchicagoldrStaging.population.readExistingFixityLog import ReadExistingFixityLog
+from uchicagoldrStaging.population.writeFixityLog import WriteFixityLog
 
 def main():
     # start of parser boilerplate
@@ -91,11 +93,11 @@ def main():
         logger.addHandler(fh)
     logger.addHandler(ch)
     try:
-        shouldBeEAD=getImmediateSubDirs(args.dest_root)
-        assert(len(shouldBeEAD)==1)
-        shouldBeAccNo=getImmediateSubDirs(join(args.dest_root,shouldBeEAD[0]))
-        assert(len(shouldBeAccNo)==1)
-        stageRoot=join(join(args.dest_root,shouldBeEAD[0]),shouldBeAccNo[0])
+        validation=ValidateBase(args.dest_root)
+        if validation[0]==True:
+            stageRoot=join(*validation[1:])
+        else:
+            logger.critical("Your staging root appears to not be valid!")
         destinationAdminRoot=join(stageRoot,'admin/')
         destinationDataRoot=join(stageRoot,'data/')
         containing_folder=args.containing_folder
@@ -108,31 +110,15 @@ def main():
         logger.addHandler(stagingDebugLog)
 
         logger.debug("Creating batch from moved files.")
-        movedFiles=Batch(args.dest_root,directory=destinationDataFolder)
+        movedFiles=Batch(destinationDataFolder,directory=destinationDataFolder)
         
         existingMovedFileHashes={}
         movedFileHashes={}
         logger.info("Hashing copied files.")
-        if exists(join(destinationAdminFolder,'fixityInStaging.txt')):
-            with open(join(destinationAdminFolder,'fixityInStaging.txt'),'r') as f:
-                if not args.rehash:
-                    for line in f.readlines():
-                        splitLine=line.split('\t')
-                        if splitLine[1] != "ERROR":
-                            existingMovedFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
-        with open(join(destinationAdminFolder,'fixityInStaging.txt'),'a') as f:
-            for item in movedFiles.find_items(from_directory=True):
-                if item.test_readability():
-                    item.set_root_path(destinationDataFolder)
-                    if relpath(item.get_file_path(),start=item.get_root_path()) not in existingMovedFileHashes:
-                        item.set_sha256(item.find_sha256_hash())
-                        item.set_md5(item.find_md5_hash())
-                        movedFileHashes[relpath(item.get_file_path(),start=destinationDataFolder)]=[item.get_sha256(),item.get_md5()]
-                else:
-                    logger.warn("COULD NOT READ FILE: "+item.get_file_path())
-                    movedFileHashes[relpath(item.get_file_path(),start=destinationDataFolder)]=["ERROR","ERROR"]
-            for entry in movedFileHashes:
-                f.write(entry+"\t"+movedFileHashes[entry][0]+'\t'+movedFileHashes[entry][1]+'\n')
+        existingHashes=None
+        if not args.rehash and exists(join(destinationAdminFolder,'fixityOnDisk.txt')):
+            existingHashes=ReadExistingFixityLog(join(destinationAdminFolder,'fixityOnDisk.txt'))
+        WriteFixityLog(join(destinationAdminFolder,'fixityOnDisk.txt'),movedFiles,existingHashes=existingHashes)
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")

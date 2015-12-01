@@ -16,7 +16,7 @@ from logging import DEBUG, FileHandler, Formatter, getLogger, \
 from os import _exit
 from os.path import exists,join
 
-from bash_cmd import BashCommand
+from uchicagoldrStaging.creation.createStagingStructure import createStagingStructure
 
 def main():
     # start of parser boilerplate
@@ -83,16 +83,7 @@ def main():
         ark=args.ark
         ead=args.ead
         accno=args.accno
-        assert(exists(root))
-        mkAdminDirArgs=['mkdir','-p',join(root,ark,ead,accno,"admin")]
-        mkAdminDirCommand=BashCommand(mkAdminDirArgs)
-        assert(mkAdminDirCommand.run_command()[0])
-        assert(mkAdminDirCommand.get_data()[1].returncode == 0)
-        mkDataDirArgs=['mkdir',join(root,ark,ead,accno,"data")]
-        mkDataDirCommand=BashCommand(mkDataDirArgs)
-        assert(mkDataDirCommand.run_command()[0])
-        assert(mkDataDirCommand.get_data()[1].returncode == 0)
-        print("New staging root is:\n"+join(root,ark))
+        print("New staging root is:\n"+createStagingStructure(root,ark,ead,accno))
             
         return 0
     except KeyboardInterrupt:

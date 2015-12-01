@@ -24,8 +24,10 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
-def getImmediateSubDirs(path):
-    return [name for name in listdir(path) if isdir(join(path,name))]
+from uchicagoldrStaging.lib import getImmediateSubDirs
+from uchicagoldrStaging.validation.validateBase import ValidateBase
+from uchicagoldrStaging.population.readExistingFixityLog import ReadExistingFixityLog
+from uchicagoldrStaging.population.writeFixityLog import WriteFixityLog
 
 def main():
     # start of parser boilerplate
@@ -103,11 +105,12 @@ def main():
             wrongRootGoAnyways=input("Are you sure you want to continue? (y/n)\n")
             if wrongRootGoAnyways is not 'y':
                 exit(1)
-        shouldBeEAD=getImmediateSubDirs(args.dest_root)
-        assert(len(shouldBeEAD)==1)
-        shouldBeAccNo=getImmediateSubDirs(join(args.dest_root,shouldBeEAD[0]))
-        assert(len(shouldBeAccNo)==1)
-        stageRoot=join(join(args.dest_root,shouldBeEAD[0]),shouldBeAccNo[0])
+        validation=ValidateBase(args.dest_root)
+        if validation[0] == True:
+            stageRoot=join(*validation[1:])
+        else:
+            logger.critical("Your staging root appears to not be valid!")
+            exit(1)
         destinationAdminRoot=join(stageRoot,'admin/')
         destinationDataRoot=join(stageRoot,'data/')
         containing_folder=args.containing_folder
@@ -122,29 +125,11 @@ def main():
         logger.debug("Creating batch from original files.")
         originalFiles=Batch(args.root,directory=args.item)
 
-        existingOriginalFileHashes={}
-        originalFileHashes={}
         logger.info("Hashing original files")
-        if exists(join(destinationAdminFolder,'fixityFromOrigin.txt')):
-            with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'r') as f:
-                for line in f.readlines():
-                    if not args.rehash:
-                        splitLine=line.split('\t')
-                        if splitLine[1] != "ERROR":
-                            existingOriginalFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
-        with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'a') as f:
-            for item in originalFiles.find_items(from_directory=True):
-                if item.test_readability():
-                    item.set_root_path(args.root)
-                    if relpath(item.get_file_path(),start=item.get_root_path()) not in existingOriginalFileHashes:
-                        item.set_sha256(item.find_sha256_hash())
-                        item.set_md5(item.find_md5_hash())
-                        originalFileHashes[relpath(item.get_file_path(),start=item.get_root_path())]=[item.get_sha256(),item.get_md5()]
-                else:
-                    logger.warn("COULD NOT READ FILE: "+item.get_file_path())
-                    originalFileHashes[relpath(item.get_file_path(),start=args.root)]=["ERROR","ERROR"]
-            for entry in originalFileHashes:
-                f.write(entry+"\t"+originalFileHashes[entry][0]+'\t'+originalFileHashes[entry][1]+'\n')
+        existingHashes=None
+        if not args.rehash and exists(join(destinationAdminFolder,'fixityFromOrigin.txt')):
+            existingHashes=ReadExistingFixityLog(join(destinationAdminFolder,'fixityFromOrigin.txt'))
+        WriteFixityLog(join(destinationAdminFolder,'fixityFromOrigin.txt'),originalFiles,existingHashes=existingHashes)
         return 0
     except KeyboardInterrupt:
         logger.error("Program aborted manually")
