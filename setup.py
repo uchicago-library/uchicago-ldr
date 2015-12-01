@@ -5,7 +5,12 @@ setup(
     version = '1.0.0',
     author = "Tyler Danstrom,Brian Balsamo",
     author_email = "tdanstrom@uchicago.edu,balsamo@uchicago.edu",
-    packages = ['uchicagoldr','uchicagoldrLogging'],
+    packages = [\
+    'uchicagoldr',\
+    'uchicagoldrRecords','uchicagoldrRecords.fields','uchicagoldrRecords.mappers','uchicagoldrRecords.readers','uchicagoldrRecords.record',\
+    'uchicagoldrStaging','uchicagoldrStaging.creation','uchicagoldrStaging.validation','uchicagoldrStaging.population',\
+    'uchicagoldrLogging'
+    ],
     description = """\
     A set of base classes for interacting with University of Chicago library 
     digital repository objects

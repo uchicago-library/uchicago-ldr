@@ -19,13 +19,15 @@ from os.path import isdir
 from os.path import join
 from os.path import relpath
 from os.path import exists
+from os.path import split
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
-def getImmediateSubDirs(path):
-    return [name for name in listdir(path) if isdir(join(path,name))]
+from uchicagoldrStaging.validation.validateBase import ValidateBase
+from uchicagoldrStaging.population.prefixToFolder import prefixToFolder
+from uchicagoldrStaging.lib import getImmediateSubDirs
 
 def main():
     log_format = Formatter( \
@@ -107,33 +109,23 @@ def main():
         logger.critical("Root appears to not conform to rsync path specs.")
         exit(1)
     try:
-        assert(isdir(args.dest_root))
-        shouldBeEAD=getImmediateSubDirs(args.dest_root)
-        assert(len(shouldBeEAD)==1)
-        shouldBeAccNo=getImmediateSubDirs(join(args.dest_root,shouldBeEAD[0]))
-        assert(len(shouldBeAccNo)==1)
-        stageRoot=join(join(args.dest_root,shouldBeEAD[0]),shouldBeAccNo[0])
+        validation=ValidateBase(args.dest_root)
+        if validation[0] != True:
+            logger.critical("Your staging root isn't valid!")
+            exit(1)
+        else:
+            stageRoot=join(*validation[1:])
+
         destinationAdminRoot=join(stageRoot,'admin/')
         destinationDataRoot=join(stageRoot,'data/')
         prefix=args.prefix
 
         if not prefix[-1].isdigit():
+            destFolder=prefixToFolder(destinationDataRoot,prefix)
+            logger.info("Creating new data and admin directories for your prefix: "+destFolder)
 
-            existingDataSubDirs=[name for name in getImmediateSubDirs(destinationDataRoot) if prefix in name]
-
-            if len(existingDataSubDirs) < 1:
-                nextNum=str(1)
-            else:
-                nums=[]
-                for directory in existingDataSubDirs:
-                    num=directory.strip(prefix)
-                    nums.append(int(num))
-                nums.sort()
-                nextNum=str(nums[-1]+1)
-            logger.info("Creating new data and admin directories for your prefix: "+prefix+nextNum)
-
-            destinationAdminFolder=join(destinationAdminRoot,prefix+nextNum)
-            destinationDataFolder=join(destinationDataRoot,prefix+nextNum)
+            destinationAdminFolder=join(destinationAdminRoot,destFolder)
+            destinationDataFolder=join(destinationDataRoot,destFolder)
 
             mkAdminDirArgs=['mkdir',destinationAdminFolder]
             mkAdminDirComm=BashCommand(mkAdminDirArgs)
@@ -157,13 +149,16 @@ def main():
             assert(isdir(destinationDataFolder))
 
         else:
-            logger.info("Attempting to resume transfer into "+join(destinationDataRoot,prefix))
-            nextNum=""
+            destFolder=args.prefix
+            logger.info("Attempting to resume transfer into "+destFolder)
             
-            destinationAdminFolder=join(destinationAdminRoot,prefix)
-            assert(isdir(destinationAdminFolder))
-            destinationDataFolder=join(destinationDataRoot,prefix)
-            assert(isdir(destinationDataFolder))
+            destinationAdminFolder=join(destinationAdminRoot,destFolder)
+            destinationDataFolder=join(destinationDataRoot,destFolder)
+
+            for folder in [destinationAdminFolder,destinationDataFolder]:
+                if not exists(folder):
+                    logger.critical('It looks like you are trying to resume a transfer, but a corresponding data or admin folder is missing! Please remedy this and try again! Exiting (1)')
+                    exit(1)
 
         stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.txt'))
         stagingDebugLog.setFormatter(log_format)
@@ -187,7 +182,7 @@ def main():
         logger.info("Rsync complete.")
 
         if args.chain:
-            logger.info(prefix+nextNum)
+            logger.info(split(destinationDataFolder)[1])
 
         return 0
     except KeyboardInterrupt:

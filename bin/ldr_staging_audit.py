@@ -24,8 +24,8 @@ from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
 from uchicagoldr.bash_cmd import BashCommand
 
-def getImmediateSubDirs(path):
-    return [name for name in listdir(path) if isdir(join(path,name))]
+from uchicagoldrStaging.validation.validateBase import ValidateBase
+from uchicagoldrStaging.population.readExistingFixityLog import ReadExistingFixityLog
 
 def main():
     # start of parser boilerplate
@@ -91,38 +91,24 @@ def main():
         logger.addHandler(fh)
     logger.addHandler(ch)
     try:
-        shouldBeEAD=getImmediateSubDirs(args.dest_root)
-        assert(len(shouldBeEAD)==1)
-        shouldBeAccNo=getImmediateSubDirs(join(args.dest_root,shouldBeEAD[0]))
-        assert(len(shouldBeAccNo)==1)
-        stageRoot=join(join(args.dest_root,shouldBeEAD[0]),shouldBeAccNo[0])
+        validation=ValidateBase(args.dest_root)
+        if validation[0] != True:
+            logger.critical("Your staging root isn't valid!")
+            exit(1)
+        else:
+            stageRoot=join(*validation[1:])
         destinationAdminRoot=join(stageRoot,'admin/')
         destinationDataRoot=join(stageRoot,'data/')
         containing_folder=args.containing_folder
         destinationAdminFolder=join(destinationAdminRoot,containing_folder)
-        destinationDataFolder=join(destinationDataRoot,containing_folder)
 
         stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.txt'))
         stagingDebugLog.setFormatter(log_format)
         stagingDebugLog.setLevel('DEBUG')
         logger.addHandler(stagingDebugLog)
 
-        existingOriginalFileHashes={}
-        logger.info("Reading origin hashes")
-        if exists(join(destinationAdminFolder,'fixityFromOrigin.txt')):
-            with open(join(destinationAdminFolder,'fixityFromOrigin.txt'),'r') as f:
-                for line in f.readlines():
-                    if not args.rehash:
-                        splitLine=line.split('\t')
-                        existingOriginalFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
-        existingMovedFileHashes={}
-        logger.info("Reading copied hashes")
-        if exists(join(destinationAdminFolder,'fixityInStaging.txt')):
-            with open(join(destinationAdminFolder,'fixityInStaging.txt'),'r') as f:
-                if not args.rehash:
-                    for line in f.readlines():
-                        splitLine=line.split('\t')
-                        existingMovedFileHashes[splitLine[0]]=[splitLine[1],splitLine[2].rstrip('\n')]
+        existingOriginalFileHashes=ReadExistingFixityLog(join(destinationAdminFolder,'fixityFromOrigin.txt'))
+        existingMovedFileHashes=ReadExistingFixityLog(join(destinationAdminFolder,'fixityOnDisk.txt'))
 
         notMoved=[key for key in existingOriginalFileHashes if key not in existingMovedFileHashes]
         foreignFiles=[key for key in existingMovedFileHashes if key not in existingOriginalFileHashes]
