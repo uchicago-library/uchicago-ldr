@@ -1,7 +1,7 @@
 
 __author__ = "[name]"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.0"
+__version__ = ").0.0"
 __maintainer__ = "[name]"
 __email__ = "[email]"
 __status__ = "[Prototype/Development/Production/etc]"
@@ -27,6 +27,7 @@ from uchicagoldrLogging.filters import UserAndIPFilter
 
 from uchicagoldr.batch import Batch
 from uchicagoldr.item import Item
+
 ### Local package imports end ###
 
 
@@ -77,22 +78,15 @@ def main():
                          dest="log_loc",
                          \
     )
-    parser.add_argument("item", help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
-                        " a type of controlled collection"
-    )
-    parser.add_argument("root",help="Enter the root of the directory path",
-                        action="store"
-    )
     args = parser.parse_args()
 
     ### Begin argument post processing, if required ###
     if args.verbosity and args.verbosity not in ['DEBUG','INFO','WARN','ERROR','CRITICAL']:
-        logger.critical("You did not pass a valid argument to the verbosity flag! Valid arguments include: 'DEBUG','INFO','WARN','ERROR', and 'CRITICAL'")
+        logger.error("You did not pass a valid argument to the verbosity flag! Valid arguments include: 'DEBUG','INFO','WARN','ERROR', and 'CRITICAL'")
         return(1)
     if args.log_loc:
         if not exists(split(args.log_loc)[0]):
-            logger.critical("The specified log location does not exist!")
+            logger.error("The specified log location does not exist!")
             return(1)
     ### End argument post processing ###
 
@@ -122,10 +116,11 @@ def main():
     try:
         logger.info("BEGINS")
         ### Begin module code ###
-        b = Batch(args.root, args.item)
-        for item in b.find_items(from_directory=True):
-            print(item.get_file_path())
-            
+        logger.debug('Debug Message')
+        logger.info('Info Message')
+        logger.warn('Warn Message')
+        logger.error('Error Message')
+        logger.critical('Critical Message')
         ### End module code ###
         logger.info("ENDS: COMPLETE")
         return 0

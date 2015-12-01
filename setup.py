@@ -8,7 +8,8 @@ setup(
     packages = [\
     'uchicagoldr',\
     'uchicagoldrRecords','uchicagoldrRecords.fields','uchicagoldrRecords.mappers','uchicagoldrRecords.readers','uchicagoldrRecords.record',\
-    'uchicagoldrStaging','uchicagoldrStaging.creation','uchicagoldrStaging.validation','uchicagoldrStaging.population'
+    'uchicagoldrStaging','uchicagoldrStaging.creation','uchicagoldrStaging.validation','uchicagoldrStaging.population',\
+    'uchicagoldrLogging'
     ],
     description = """\
     A set of base classes for interacting with University of Chicago library 
