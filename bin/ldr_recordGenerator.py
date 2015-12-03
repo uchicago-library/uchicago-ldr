@@ -31,6 +31,8 @@ from uchicagoldrRecords.mappers.dummyMapper import DummyMapper
 from uchicagoldrRecords.record.recordWriting import instantiateRecord, \
     meldRecord, manualInput, booleanLoop, validate, generateFileEntries, \
     computeTotalFileSizeFromRecord, writeNoClobber, createSubRecord
+
+from uchicagoldrStaging.validation.validateBase import ValidateBase
 # Local package imports end #
 
 # Header info begins #
@@ -64,6 +66,7 @@ def main():
     termHandler = DefaultTermHandler()
     logger.addHandler(termHandler)
     logger.addFilter(f)
+    logger.info("BEGINS")
     # Application specific log instantation ends #
 
     # Parser instantiation begins #
@@ -98,29 +101,36 @@ def main():
                         help="save logging to a file",
                         dest="log_loc",
                         )
-    parser.add_argument("item",
+    parser.add_argument(
+                        "item",
                         help="Enter a noid for an accession or a " +
                         "directory path that you need to validate against" +
                         " a type of controlled collection"
                         )
-    parser.add_argument("root",
+    parser.add_argument(
+                        "root",
                         help="Enter the root of the directory path",
                         action="store"
                         )
-    parser.add_argument("--acquisition-record", '-a',
+    parser.add_argument(
+                        "--acquisition-record", '-a',
                         help="Enter a noid for an accession or a " +
                         "directory path that you need to validate against" +
                         " a type of controlled collection",
                         action='append'
                         )
-    parser.add_argument("--out-file", '-o',
+    parser.add_argument(
+                        "--out-file", '-o',
                         help="The location where the full record should be " +
                         " written to disk.",
                         required=True,
                         action="append"
                         )
-    args = parser.parse_args()
-
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        logger.critical("ENDS: Command line argument parsing failed.")
+        exit(1)
     # Begin argument post processing, if required #
     if args.verbosity and args.verbosity not in ['DEBUG', 'INFO',
                                                  'WARN', 'ERROR', 'CRITICAL']:
@@ -159,7 +169,6 @@ def main():
             logger.addHandler(fileHandler)
     # End user specified log instantiation #
     try:
-        logger.info("BEGINS")
         # Begin module code #
         # Keep in mind that population order here matters a lot in terms of
         # how much input the user will be asked for.
@@ -212,25 +221,16 @@ def main():
 
         print("Attempting to write LDR subrecord into staging structure.")
         ldrRecordPath = None
-        try:
-            # Lets see if we are in a real
-            # (and properly formed) staging structure
-            # TODO: Replace this code block with the library code
-            assert(len(listdir(args.item))==1)
-            assert(isdir(join(args.item,listdir(args.item)[0])))
-            EADPath=join(args.item,listdir(args.item)[0])
-            assert(len(listdir(EADPath))==1)
-            assert(isdir(join(EADPath,listdir(EADPath)[0])))
-            accNoPath=join(EADPath,listdir(EADPath)[0])
-            assert(len(listdir(accNoPath))==2)
-            assert("data" in listdir(accNoPath) and \
-                   "admin" in listdir(accNoPath))
-            ldrRecordPath = join(accNoPath, "admin") + '/record.json'
-        except AssertionError:
-            print("You don't seem to have pointed the script at a fully " +
-                  "qualified staging structure. Please manually specify " +
-                  "a location to save the LDR record to, otherwise leave " +
-                  "this line blank to save only the full record.")
+        validation = ValidateBase(args.item)
+        if validation[0] == True:
+            ldrRecordPath = join(*validation[1:], "admin", 'record.json')
+        else:
+            logger.warn("You don't seem to have pointed the script at a " +
+                        "fully qualified staging structure. Please manually " +
+                        "specify a location to save the LDR record to, " +
+                        "otherwise leave this line blank to save only " +
+                        "the full record."
+                        )
             while ldrRecordPath == None:
                 ldrRecordPath = input("LDR Record Path: ")
                 if ldrRecordPath == "":

@@ -117,7 +117,11 @@ def main():
                         "hashes, recreate them on this run",
                         action="store_true"
     )
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        logger.critical("ENDS: Command line argument parsing failed.")
+        exit(1)
 
     # Begin argument post processing, if required #
     if args.verbosity and args.verbosity not in ['DEBUG', 'INFO',

@@ -110,7 +110,11 @@ def main():
                         help="Enter the accession number",
                         action="store"
     )
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        logger.critical("ENDS: Command line argument parsing failed.")
+        exit(1)
 
     # Begin argument post processing, if required #
     if args.verbosity and args.verbosity not in ['DEBUG', 'INFO',

@@ -51,6 +51,7 @@ def main():
     termHandler = DefaultTermHandler()
     logger.addHandler(termHandler)
     logger.addFilter(f)
+    logger.info("BEGINS")
     # Application specific log instantation ends #
 
     # Parser instantiation begins #
@@ -122,7 +123,11 @@ def main():
                         help="Specify and alternate script location"
                         action="store"
     )
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        logger.critical("ENDS: Command line argument parsing failed.")
+        exit(1)
 
     # Begin argument post processing, if required #
     if args.verbosity and args.verbosity not in ['DEBUG', 'INFO',
@@ -162,7 +167,6 @@ def main():
             logger.addHandler(fileHandler)
     # End user specified log instantiation #
     try:
-        logger.info("BEGINS")
         # Begin module code #
         pythonPath = 'python3'
         if not args.scriptloc:

@@ -15,9 +15,6 @@ from uchicagoldrLogging.handlers import DefaultTermHandler, DebugTermHandler, \
     DefaultFileHandler, DebugFileHandler, DefaultTermHandlerAtLevel,\
     DefaultFileHandlerAtLevel
 from uchicagoldrLogging.filters import UserAndIPFilter
-
-from uchicagoldr.batch import Batch
-from uchicagoldr.item import Item
 # Local package imports end #
 
 # Header info begins #
@@ -50,6 +47,7 @@ def main():
     termHandler = DefaultTermHandler()
     logger.addHandler(termHandler)
     logger.addFilter(f)
+    logger.info("BEGINS")
     # Application specific log instantation ends #
 
     # Parser instantiation begins #
@@ -58,8 +56,12 @@ def main():
                             "written by "+__author__ +
                             " "+__email__)
 
-    parser.add_argument("-v", help="See the version of this program",
-                        action="version", version=__version__)
+    parser.add_argument(
+                        "-v",
+                        help="See the version of this program",
+                        action="version",
+                        version=__version__
+    )
     # let the user decide the verbosity level of logging statements
     # -b sets it to INFO so warnings, errors and generic informative statements
     # will be logged
@@ -85,16 +87,11 @@ def main():
                         dest="log_loc",
 
     )
-    parser.add_argument("item",
-                        help="Enter a noid for an accession or a " +
-                        "directory path that you need to validate against" +
-                        " a type of controlled collection"
-    )
-    parser.add_argument("root",
-                        help="Enter the root of the directory path",
-                        action="store"
-    )
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    except SystemExit:
+        logger.critical("ENDS: Command line argument parsing failed.")
+        exit(1)
 
     # Begin argument post processing, if required #
     if args.verbosity and args.verbosity not in ['DEBUG', 'INFO',
@@ -134,13 +131,12 @@ def main():
             logger.addHandler(fileHandler)
     # End user specified log instantiation #
     try:
-        logger.info("BEGINS")
         # Begin module code #
-        logger.debug('Debug Message')
-        logger.info('Info Message')
-        logger.warn('Warn Message')
-        logger.error('Error Message')
-        logger.critical('Critical Message')
+        logger.debug("DEBUG MESSAGE")
+        logger.info("INFO MESSAGE")
+        logger.warn("WARN MESSAGE")
+        logger.error("ERROR MESSAGE")
+        logger.critical("CRITICAL MESSAGE")
         # End module code #
         logger.info("ENDS: COMPLETE")
         return 0
