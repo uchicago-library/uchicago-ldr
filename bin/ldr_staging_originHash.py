@@ -27,7 +27,7 @@ from uchicagoldrStaging.population.writeFixityLog import WriteFixityLog
 # Header info begins #
 __author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Brian Balsamo"
 __email__ = "balsamo@uchicago.edu"
 __status__ = "Development"
@@ -54,6 +54,7 @@ def main():
     termHandler = DefaultTermHandler()
     logger.addHandler(termHandler)
     logger.addFilter(f)
+    logger.info("BEGINS")
     # Application specific log instantation ends #
 
     # Parser instantiation begins #
@@ -62,8 +63,12 @@ def main():
                             "written by "+__author__ +
                             " "+__email__)
 
-    parser.add_argument("-v", help="See the version of this program",
-                        action="version", version=__version__)
+    parser.add_argument(
+                        "-v",
+                        help="See the version of this program",
+                        action="version",
+                        version=__version__
+    )
     # let the user decide the verbosity level of logging statements
     # -b sets it to INFO so warnings, errors and generic informative statements
     # will be logged
@@ -152,7 +157,6 @@ def main():
             logger.addHandler(fileHandler)
     # End user specified log instantiation #
     try:
-        logger.info("BEGINS")
         if args.item[-1] == "/" and args.item != args.root:
             logger.warn("It looks like you may have set the root incorrectly.")
             wrongRootGoAnyways = input("Are you sure you want to continue? " +
@@ -171,15 +175,19 @@ def main():
         destinationAdminFolder = join(destinationAdminRoot, containing_folder)
         destinationDataFolder = join(destinationDataRoot, containing_folder)
 
-        stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.txt'))
-        stagingDebugLog.setFormatter(log_format)
-        stagingDebugLog.setLevel('DEBUG')
+        stagingDebugLog = DebugFileHandler(
+            join(destinationAdminFolder,'log.txt')
+        )
         logger.addHandler(stagingDebugLog)
 
         logger.debug("Creating batch from original files.")
         originalFiles = Batch(args.root, directory=args.item)
 
         logger.info("Hashing original files")
+        if args.rehash:
+            logger.info(
+                "Rehash argumnet passed. Not reading existing hashes."
+            )
         existingHashes = None
         if not args.rehash and exists(join(destinationAdminFolder, 'fixityFromOrigin.txt')):
             existingHashes = ReadExistingFixityLog(

@@ -24,7 +24,7 @@ from uchicagoldrStaging.population.readExistingFixityLog import \
 # Header info begins #
 __author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Brian Balsamo"
 __email__ = "balsamo@uchicago.edu"
 __status__ = "Development"
@@ -86,25 +86,19 @@ def main():
                         dest="log_loc",
 
     )
-    parser.add_argument("item",
-                        help="Enter a noid for an accession or a " +
-                        "directory path that you need to validate against" +
-                        " a type of controlled collection"
-    )
-    parser.add_argument("root",
-                        help="Enter the root of the directory path",
-                        action="store"
-    )
-    parser.add_argument("dest_root",
+    parser.add_argument(
+                        "dest_root",
                         help="Enter the destination root path",
                         action='store'
     )
-    parser.add_argument("containing_folder",
+    parser.add_argument(
+                        "containing_folder",
                         help="The name of the containing folder on disk " +
                         "(prefix+number)",
                         action='store'
     )
-    parser.add_argument("--rehash",
+    parser.add_argument(
+                        "--rehash",
                         help="Disregard any existing previously generated " +
                         " hashes, recreate them on this run",
                         action="store_true"
@@ -158,13 +152,12 @@ def main():
         else:
             stageRoot = join(*validation[1:])
         destinationAdminRoot = join(stageRoot, 'admin/')
-        destinationDataRoot = join(stageRoot, 'data/')
         containing_folder = args.containing_folder
         destinationAdminFolder = join(destinationAdminRoot, containing_folder)
 
-        stagingDebugLog = FileHandler(join(destinationAdminFolder, 'log.txt'))
-        stagingDebugLog.setFormatter(log_format)
-        stagingDebugLog.setLevel('DEBUG')
+        stagingDebugLog = DebugFileHandler(
+            join(destinationAdminFolder, 'log.txt')
+        )
         logger.addHandler(stagingDebugLog)
 
         existingOriginalFileHashes = ReadExistingFixityLog(

@@ -3,7 +3,7 @@
 # Default package imports begin #
 from argparse import ArgumentParser
 from os import _exit
-from os.path import split, exists
+from os.path import split, exists, join
 # Default package imports end #
 
 # Third party package imports begin #
@@ -16,9 +16,6 @@ from uchicagoldrLogging.handlers import DefaultTermHandler, DebugTermHandler, \
     DefaultFileHandlerAtLevel
 from uchicagoldrLogging.filters import UserAndIPFilter
 
-from uchicagoldr.batch import Batch
-from uchicagoldr.item import Item
-
 from uchicagoldrStaging.validation.validateBase import ValidateBase
 from uchicagoldrStaging.validation.validateOrganization import \
     ValidateOrganization
@@ -27,7 +24,7 @@ from uchicagoldrStaging.validation.validateOrganization import \
 # Header info begins #
 __author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Brian Balsamo"
 __email__ = "balsamo@uchicago.edu"
 __status__ = "Development"
@@ -89,12 +86,14 @@ def main():
                         dest="log_loc",
 
     )
-    parser.add_argument("item",
+    parser.add_argument(
+                        "item",
                         help="Enter a noid for an accession or a " +
                         "directory path that you need to validate against" +
                         " a type of controlled collection"
     )
-    parser.add_argument("root",
+    parser.add_argument(
+                        "root",
                         help="Enter the root of the directory path",
                         action="store"
     )
@@ -141,7 +140,7 @@ def main():
         logger.info("BEGINS")
         # Begin module code #
         logger.info("Validating Base Structure.")
-        validation=ValidateBase(args.item)
+        validation = ValidateBase(args.item)
         if validation[0] != True:
             logger.critical("Your staging base has not validated!")
             logger.critical(validation)
@@ -161,9 +160,9 @@ def main():
                         "but is not a directory: "+x)
 
         logger.info("Checking admin directory.")
-        topLevelAdminFiles = ['fileConversions.txt', 'record.json']
         adminValid = ValidateOrganization(adminPath,
-                                          reqTopFiles=['record.json'],
+                                          reqTopFiles=['record.json',
+                                                       'fileConversions.txt'],
                                           reqDirContents=[
                                               'fixityFromOrigin.txt',
                                               'fixityOnDisk.txt',
@@ -171,8 +170,8 @@ def main():
                                               'rsyncFromOrigin.txt']
                                           )
         if adminValid[0] != True:
-            logger.critical("Your admin directory is not well formed!")
-            logger.critical(adminValid)
+            logger.critical("ENDS: Your admin directory is not well formed!")
+            logger.warn(adminValid)
             exit(1)
         if dataValid[1]['dirs'] != adminValid[1]['dirs']:
             for x in dataValid[1]['dirs']:

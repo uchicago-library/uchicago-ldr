@@ -25,7 +25,7 @@ from uchicagoldrStaging.population.prefixToFolder import prefixToFolder
 # Header info begins #
 __author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Brian Balsamo"
 __email__ = "balsamo@uchicago.edu"
 __status__ = "Development"
@@ -53,6 +53,7 @@ def main():
     termHandler = DefaultTermHandler()
     logger.addHandler(termHandler)
     logger.addFilter(f)
+    logger.info("BEGINS")
     # Application specific log instantation ends #
 
     # Parser instantiation begins #
@@ -61,8 +62,12 @@ def main():
                             "written by "+__author__ +
                             " "+__email__)
 
-    parser.add_argument("-v", help="See the version of this program",
-                        action="version", version=__version__)
+    parser.add_argument(
+                        "-v",
+                        help="See the version of this program",
+                        action="version",
+                        version=__version__
+    )
     # let the user decide the verbosity level of logging statements
     # -b sets it to INFO so warnings, errors and generic informative statements
     # will be logged
@@ -88,14 +93,48 @@ def main():
                         dest="log_loc",
 
     )
-    parser.add_argument("item",
+    parser.add_argument(
+                        "item",
                         help="Enter a noid for an accession or a " +
-                        "directory path that you need to validate against" +
-                        " a type of controlled collection"
+                        "directory path that you need to validate against " +
+                        "a type of controlled collection"
     )
-    parser.add_argument("root",
+    parser.add_argument(
+                        "root",
                         help="Enter the root of the directory path",
                         action="store"
+    )
+    parser.add_argument(
+                        "dest_root",
+                        help="Enter the destination root path",
+                        action='store'
+    )
+    parser.add_argument(
+                        "prefix",
+                        help="The prefix of the containing folder on disk",
+                        action='store'
+    )
+    parser.add_argument(
+                        "--rehash",
+                        help="Disregard any existing previously generated " +
+                        "hashes, recreate them on this run",
+                        action="store_true"
+    )
+    parser.add_argument(
+                        "--chain",
+                        help="Write the prefix+num to stdout, for chaining " +
+                        "this command into the others via some " +
+                        "intermediate connection",
+                        action="store_true"
+    )
+    parser.add_argument(
+                        "--weird-root",
+                        help="If for some reason you deliberately want to " +
+                        "generate a strange item root structure which " +
+                        "doesn't reflect rsyncs path interpretation " +
+                        "behavior pass this option",
+                        default=False,
+                        action="store_true"
     )
     args = parser.parse_args()
 
@@ -135,9 +174,11 @@ def main():
             logger.removeHandler(fileHandler)
             fileHandler = DebugFileHandler(args.log_loc)
             logger.addHandler(fileHandler)
+    if args.item[-1] == "/" and args.item != args.root and not args.weird_root:
+        logger.critical("Root appears to not conform to rsync path specs.")
+        exit(1)
     # End user specified log instantiation #
     try:
-        logger.info("BEGINS")
         # Begin module code #
         validation = ValidateBase(args.dest_root)
         if validation[0] != True:
@@ -194,9 +235,9 @@ def main():
                                     'remedy this and try again! Exiting (1)')
                     exit(1)
 
-        stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.txt'))
-        stagingDebugLog.setFormatter(log_format)
-        stagingDebugLog.setLevel('DEBUG')
+        stagingDebugLog = DebugFileHandler(
+            join(destinationAdminFolder, 'log.txt')
+        )
         logger.addHandler(stagingDebugLog)
 
         logger.info("Beginning rsync")

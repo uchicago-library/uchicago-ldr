@@ -89,16 +89,19 @@ def main():
                         dest="log_loc",
 
     )
-    parser.add_argument("dest_root",
+    parser.add_argument(
+                        "dest_root",
                         help="Enter the destination root path",
                         action='store'
     )
-    parser.add_argument("containing_folder",
+    parser.add_argument(
+                        "containing_folder",
                         help="The name of the containing folder on disk " +
                         "(prefix+number)",
                         action='store'
     )
-    parser.add_argument("--rehash",
+    parser.add_argument(
+                        "--rehash",
                         help="Disregard any existing previously generated " +
                         "hashes, recreate them on this run",
                         action="store_true"
@@ -149,16 +152,17 @@ def main():
         if validation[0] == True:
             stageRoot = join(*validation[1:])
         else:
-            logger.critical("Your staging root appears to not be valid!")
+            logger.critical("ENDS: Your staging root appears to not be valid!")
+            exit(1)
         destinationAdminRoot = join(stageRoot, 'admin/')
         destinationDataRoot = join(stageRoot, 'data/')
         containing_folder = args.containing_folder
         destinationAdminFolder = join(destinationAdminRoot, containing_folder)
         destinationDataFolder = join(destinationDataRoot, containing_folder)
 
-        stagingDebugLog = FileHandler(join(destinationAdminFolder,'log.txt'))
-        stagingDebugLog.setFormatter(log_format)
-        stagingDebugLog.setLevel('DEBUG')
+        stagingDebugLog = DebugFileHandler(
+            join(destinationAdminFolder, 'log.txt')
+        )
         logger.addHandler(stagingDebugLog)
 
         logger.debug("Creating batch from moved files.")
@@ -167,9 +171,16 @@ def main():
 
         logger.info("Hashing copied files.")
         existingHashes = None
-        if not args.rehash and exists(join(destinationAdminFolder,'fixityOnDisk.txt')):
+        if args.rehash:
+            logger.info(
+                "Rehash argument passed. Not reading existing hashes."
+            )
+        if not args.rehash and exists(
+                join(destinationAdminFolder, 'fixityOnDisk.txt')
+        ):
             existingHashes = ReadExistingFixityLog(join(destinationAdminFolder,
-                                                        'fixityOnDisk.txt'))
+                                                        'fixityOnDisk.txt')
+                                                   )
         WriteFixityLog(
             join(destinationAdminFolder, 'fixityOnDisk.txt'),
             movedFiles, existingHashes=existingHashes
