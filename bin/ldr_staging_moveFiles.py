@@ -263,7 +263,12 @@ def main():
         logger.info("Rsync complete.")
 
         if args.chain:
-            logger.info(split(destinationDataFolder)[1])
+            try:
+                folderName = split(destinationDataFolder)[1]
+                with open('/tmp/folderName.txt', 'w') as f:
+                    f.write(folderName)
+            except Exception as e:
+                logger.critical("ENDS: Failure in writing to tmp for chaining.")
         # End module code #
         logger.info("ENDS: COMPLETE")
         return 0

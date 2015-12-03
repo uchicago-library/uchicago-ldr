@@ -120,7 +120,7 @@ def main():
     )
     parser.add_argument(
                         "--scriptloc",
-                        help="Specify and alternate script location"
+                        help="Specify and alternate script location",
                         action="store"
     )
     try:
@@ -170,12 +170,20 @@ def main():
         # Begin module code #
         pythonPath = 'python3'
         if not args.scriptloc:
-            scriptsLoc = dirname(realpath(__file__))
+            scriptsLoc = dirname(realpath(__file__))+"/"
         else:
             scriptsLoc = args.scriptloc
 
+        appendArgs = []
+        if args.rehash:
+            appendArgs.append('--rehash')
+        if args.verbosity:
+            appendArgs.append('-b')
+            appendArgs.append(args.verbosity)
+
         mvArgs = [pythonPath, scriptsLoc+'ldr_staging_moveFiles.py',
                   args.item, args.root, args.dest_root, args.prefix, "--chain"]
+        mvArgs = mvArgs+appendArgs
         mvCommand = BashCommand(mvArgs)
         assert(mvCommand.run_command()[0])
         print("\n".join(mvCommand.get_data()[1].stdout.split('\n')))
@@ -183,12 +191,17 @@ def main():
             if match('^\[CRITICAL\]', line):
                 print("Critical error detected. Exiting")
                 exit(1)
-        folder = mvCommand.get_data()[1].stdout.split('=')[-1].rstrip('\n').strip()
+
+        with open('/tmp/folderName.txt', 'r') as f:
+            try:
+                folder = f.read()
+            except Exception as e:
+                logger.critical("ENDS: Failure in reading chain file in tmp. " +
+                                "({})".format(e))
 
         origHashArgs = [pythonPath, scriptsLoc+'ldr_staging_originHash.py',
                         args.item, args.root, args.dest_root, folder]
-        if args.rehash:
-            origHashArgs.append("--rehash")
+        origHashArgs = origHashArgs+appendArgs
         origHashCommand = BashCommand(origHashArgs)
         assert(origHashCommand.run_command()[0])
         print("\n".join(origHashCommand.get_data()[1].stdout.split('\n')))
@@ -199,8 +212,7 @@ def main():
 
         stageHashArgs = [pythonPath, scriptsLoc+'ldr_staging_stagingHash.py',
                          args.dest_root, folder]
-        if args.rehash:
-            stageHashArgs.append("--rehash")
+        stageHashArgs = stageHashArgs+appendArgs
         stageHashCommand = BashCommand(stageHashArgs)
         assert(stageHashCommand.run_command()[0])
         print("\n".join(stageHashCommand.get_data()[1].stdout.split('\n')))
@@ -211,6 +223,7 @@ def main():
 
         auditArgs = [pythonPath, scriptsLoc+'ldr_staging_audit.py',
                      args.dest_root, folder]
+        auditArgs = auditArgs+appendArgs
         auditCommand = BashCommand(auditArgs)
         assert(auditCommand.run_command()[0])
         print("\n".join(auditCommand.get_data()[1].stdout.split('\n')))
