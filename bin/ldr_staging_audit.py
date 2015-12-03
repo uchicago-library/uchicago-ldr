@@ -182,8 +182,7 @@ def main():
         foreignFiles = [key for key in existingMovedFileHashes
                         if key not in existingOriginalFileHashes]
         badHash = [key for key in existingOriginalFileHashes
-                   if key not in notMoved
-                   and
+                   if key not in notMoved and
                    existingOriginalFileHashes[key] != existingMovedFileHashes[key]]
 
         for entry in existingOriginalFileHashes:

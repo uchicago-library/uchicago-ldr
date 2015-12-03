@@ -94,25 +94,30 @@ def main():
                         dest="log_loc",
 
     )
-    parser.add_argument("item",
+    parser.add_argument(
+                        "item",
                         help="Enter a noid for an accession or a " +
                         "directory path that you need to validate against" +
                         " a type of controlled collection"
     )
-    parser.add_argument("root",
+    parser.add_argument(
+                        "root",
                         help="Enter the root of the directory path",
                         action="store"
     )
-    parser.add_argument("dest_root",
+    parser.add_argument(
+                        "dest_root",
                         help="Enter the destination root path",
                         action='store'
     )
-    parser.add_argument("containing_folder",
+    parser.add_argument(
+                        "containing_folder",
                         help="The name of the containing folder on disk " +
                         "(prefix+number)",
                         action='store'
     )
-    parser.add_argument("--rehash",
+    parser.add_argument(
+                        "--rehash",
                         help="Disregard any existing previously generated " +
                         "hashes, recreate them on this run",
                         action="store_true"
@@ -174,13 +179,11 @@ def main():
             logger.critical("Your staging root appears to not be valid!")
             exit(1)
         destinationAdminRoot = join(stageRoot, 'admin/')
-        destinationDataRoot = join(stageRoot, 'data/')
         containing_folder = args.containing_folder
         destinationAdminFolder = join(destinationAdminRoot, containing_folder)
-        destinationDataFolder = join(destinationDataRoot, containing_folder)
 
         stagingDebugLog = DebugFileHandler(
-            join(destinationAdminFolder,'log.txt')
+            join(destinationAdminFolder, 'log.txt')
         )
         logger.addHandler(stagingDebugLog)
 
@@ -193,7 +196,10 @@ def main():
                 "Rehash argumnet passed. Not reading existing hashes."
             )
         existingHashes = None
-        if not args.rehash and exists(join(destinationAdminFolder, 'fixityFromOrigin.txt')):
+        if not args.rehash and exists(
+                join(
+                    destinationAdminFolder, 'fixityFromOrigin.txt'
+                )):
             existingHashes = ReadExistingFixityLog(
                 join(
                      destinationAdminFolder, 'fixityFromOrigin.txt'
