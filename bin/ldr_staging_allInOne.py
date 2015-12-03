@@ -3,7 +3,7 @@
 # Default package imports begin #
 from argparse import ArgumentParser
 from os import _exit
-from os.path import split, exists
+from os.path import split, exists, dirname, realpath
 from re import match
 # Default package imports end #
 
@@ -59,8 +59,12 @@ def main():
                             "written by "+__author__ +
                             " "+__email__)
 
-    parser.add_argument("-v", help="See the version of this program",
-                        action="version", version=__version__)
+    parser.add_argument(
+                        "-v",
+                        help="See the version of this program",
+                        action="version",
+                        version=__version__
+    )
     # let the user decide the verbosity level of logging statements
     # -b sets it to INFO so warnings, errors and generic informative statements
     # will be logged
@@ -86,27 +90,37 @@ def main():
                         dest="log_loc",
 
     )
-    parser.add_argument("item",
+    parser.add_argument(
+                        "item",
                         help="Enter a noid for an accession or a " +
                         "directory path that you need to validate against" +
                         " a type of controlled collection"
     )
-    parser.add_argument("root",
+    parser.add_argument(
+                        "root",
                         help="Enter the root of the directory path",
                         action="store"
     )
-    parser.add_argument("dest_root",
+    parser.add_argument(
+                        "dest_root",
                         help="Enter the destination root path",
                         action='store'
     )
-    parser.add_argument("prefix",
+    parser.add_argument(
+                        "prefix",
                         help="The prefix of the containing folder on disk",
                         action='store'
     )
-    parser.add_argument("--rehash",
+    parser.add_argument(
+                        "--rehash",
                         help="Disregard any existing previously generated" +
                         "hashes, recreate them on this run",
                         action="store_true"
+    )
+    parser.add_argument(
+                        "--scriptloc",
+                        help="Specify and alternate script location"
+                        action="store"
     )
     args = parser.parse_args()
 
@@ -151,7 +165,10 @@ def main():
         logger.info("BEGINS")
         # Begin module code #
         pythonPath = 'python3'
-        scriptsLoc = '/Users/balsamo/repos/uchicago-ldr/bin/'
+        if not args.scriptloc:
+            scriptsLoc = dirname(realpath(__file__))
+        else:
+            scriptsLoc = args.scriptloc
 
         mvArgs = [pythonPath, scriptsLoc+'ldr_staging_moveFiles.py',
                   args.item, args.root, args.dest_root, args.prefix, "--chain"]
