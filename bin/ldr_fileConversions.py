@@ -37,7 +37,7 @@ file formats from the files in it.
 
 
 # Functions begin #
-def parseResult(result):
+def parseResult(result,filepath):
     if result[0] == False:
         logger.warn("Conversion failed!")
         logger.debug("Command output follows:")
@@ -48,7 +48,9 @@ def parseResult(result):
     else:
         logger.debug(str(result))
         if result[1].returncode != 0:
-            logger.warn("Conversion retruned a non-zero exit status: " +
+            logger.warn("Conversion of " +
+                        filepath +
+                        " returned a non-zero exit status: " +
                         str(result[1].returncode))
             logger.debug("Command output follows:")
             logger.debug(result[1])
@@ -309,48 +311,48 @@ def parse(item):
     if extension in audioExtensions or item.find_file_mime_type() in audioMimes:
         logger.info("Audio extension or mime detected")
         result = audioConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension in officeExtensions or \
             item.find_file_mime_type() in officeMimes:
         logger.info("Office extension or mime detected")
         result = officeConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension == ".xls" or extension == ".xlsx":
         logger.info("XLS extension detected")
         result = xlsConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension == ".doc" or extension == ".docx":
         logger.info("DOC extension detected")
         result = txtConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension in videoExtensions or item.find_file_mime_type() in videoMimes:
         logger.info("Video extension or mime detected")
         result = videoConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension in imageExtensions or item.find_file_mime_type() in imageMimes:
         logger.info("Image extension or mime detected")
         result = imageConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension == ".gif":
         logger.info("GIF extension detected")
         result = gifConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension in zipExtensions or item.find_file_mime_type() in zipMimes:
         logger.info("Zip extension or mime detected")
         result = zipConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 
     if extension in htmlExtensions or item.find_file_mime_type() in htmlMimes:
         logger.info("HTML extension or mime detected")
         result = htmlConverter(item)
-        parseResult(result)
+        parseResult(result, item.get_file_path())
 # Functions end #
 
 
