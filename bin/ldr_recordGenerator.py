@@ -46,7 +46,8 @@ __status__ = "Prototype"
 
 """
 A module meant to ingest a digital acquisitions form and a staged directory
-and produce a record designed for use by Special Collections and the DAS.
+and produce a record designed for use by Special Collections, the LDR,
+and the DAS.
 """
 
 # Functions begin #

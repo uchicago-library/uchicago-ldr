@@ -18,16 +18,17 @@ from uchicagoldrLogging.filters import UserAndIPFilter
 # Local package imports end #
 
 # Header info begins #
-__author__ = "[name]"
+__author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.0"
-__maintainer__ = "[name]"
-__email__ = "[email]"
-__status__ = "[Prototype/Development/Production/etc]"
+__version__ = "0.0.2"
+__maintainer__ = "Brian Balsamo"
+__email__ = "balsamo@uchicago.edu"
+__status__ = "Development"
 # Header info ends #
 
 """
-[A brief description of the module as a whole]
+A simple test utility that prints a logging message of every severity to the
+default logging arrangement
 """
 
 # Functions begin #

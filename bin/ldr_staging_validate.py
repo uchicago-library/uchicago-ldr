@@ -31,7 +31,7 @@ __status__ = "Development"
 # Header info ends #
 
 """
-[A brief description of the module as a whole]
+This module validates a staging root structure.
 """
 
 # Functions begin #

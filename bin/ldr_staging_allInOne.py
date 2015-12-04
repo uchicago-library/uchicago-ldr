@@ -23,15 +23,16 @@ from uchicagoldr.bash_cmd import BashCommand
 # Header info begins #
 __author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Brian Balsamo"
 __email__ = "balsamo@uchicago.edu"
 __status__ = "Development"
 # Header info ends #
 
 """
-This module is meant to take a location on physical media (or all the contents)
- and move it into disk space in the LDR staging area.
+This module combines the functionality of several other utilities in order
+to fully automate the process of moving files into a staging environment
+and generating original fixity/administrative information.
 """
 
 # Functions begin #

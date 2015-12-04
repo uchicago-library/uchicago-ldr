@@ -27,14 +27,15 @@ from uchicagoldrStaging.population.writeFixityLog import WriteFixityLog
 # Header info begins #
 __author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Brian Balsamo"
 __email__ = "balsamo@uchicago.edu"
 __status__ = "Development"
 # Header info ends #
 
 """
-[A brief description of the module as a whole]
+This module generates fixity information for files being moved into staging.
+It generates fixity information as the files appear in library disk-space.
 """
 
 # Functions begin #

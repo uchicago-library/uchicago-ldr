@@ -34,7 +34,8 @@ __status__ = "Development"
 # Header info ends #
 
 """
-[A brief description of the module as a whole]
+This module generates fixity checks for a set of files being moved into staging.
+This generates the fixity as the files appear on the originating media.
 """
 
 # Functions begin #
