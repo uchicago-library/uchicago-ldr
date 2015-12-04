@@ -1,7 +1,8 @@
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine, MetaData, Table
+from sqlalchemy import create_engine, MetaData
+
 
 class Database(object):
     session = None
@@ -13,8 +14,8 @@ class Database(object):
         session = sessionmaker(bind=engine)
         session = session()
         metadata = MetaData()
-        metadata.reflect( \
-                          bind=engine,only=tables_to_bind \
+        metadata.reflect(
+                          bind=engine, only=tables_to_bind
         )
         self.base = declarative_base()
         engine.connect()

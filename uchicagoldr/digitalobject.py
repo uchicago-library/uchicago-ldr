@@ -1,3 +1,6 @@
+from re import compile as re_compile
+from collections import namedtuple
+
 
 class DigitalObject(object):
     object_identifier = ""
@@ -15,14 +18,14 @@ class DigitalObject(object):
         assert object_pattern
         pattern_search = re_compile(object_pattern).search(self.filepath)
         if pattern_search:
-            return namedtuple("data", "valid keys")( \
+            return namedtuple("data", "valid keys")(
                                                      True,
-                                                     pattern_search.groups() \
+                                                     pattern_search.groups()
             )
         else:
-            return namedtuple("data", "valid keys")( \
+            return namedtuple("data", "valid keys")(
                                                      False,
-                                                     None \
+                                                     None
             )
 
     def classify_file_type(self, control_type_data):
@@ -33,7 +36,6 @@ class DigitalObject(object):
                                 search(self.filepath)
         pagenumber = None
         if page_pattern_search:
-            
             groups = page_pattern_search.groups()
             pagenumber = groups[-2]
             pagenumber = pagenumber.lstrip('0')

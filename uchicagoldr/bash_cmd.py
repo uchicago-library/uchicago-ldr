@@ -1,5 +1,6 @@
 
-from subprocess import run, PIPE, STDOUT, TimeoutExpired, CalledProcessError
+from subprocess import run, PIPE, STDOUT
+
 
 class BashCommand(object):
     args = []
@@ -13,13 +14,14 @@ class BashCommand(object):
         self.args = arguments
 
     def run_command(self):
-        assert isinstance(self.args,list)
+        assert isinstance(self.args, list)
         try:
-            cmd = run(self.args, stdout = PIPE, stderr = STDOUT, timeout=self.timeout,universal_newlines=True)
+            cmd = run(self.args, stdout=PIPE, stderr=STDOUT,
+                      timeout=self.timeout, universal_newlines=True)
             self.command_ran = True
         except Exception as e:
             self.cmd_out = e
-            return(False,e)
+            return(False, e)
         try:
             self.cmd_out = cmd
         except Exception as e:
@@ -33,12 +35,12 @@ class BashCommand(object):
     def get_args(self):
         return self.args
 
-    def set_args(self,new_args):
-        assert isinstance(new_args,list)
-        self.args=new_args
+    def set_args(self, new_args):
+        assert isinstance(new_args, list)
+        self.args = new_args
 
-    def set_timeout(self,new_timeout):
-        self.timeout=new_timeout
+    def set_timeout(self, new_timeout):
+        self.timeout = new_timeout
 
     def get_timeout(self):
         return self.timeout
