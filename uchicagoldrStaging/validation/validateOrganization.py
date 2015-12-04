@@ -21,6 +21,7 @@ def ValidateOrganization(targetPath, reqTopFiles=[], reqDirContents=[]):
 
     for x in reqTopFiles:
         if x not in targetTopFileList:
+            returnDict['missingReqs'].append(join(targetPath, x))
             return ((False, returnDict))
 
     for x in targetFolderList:
