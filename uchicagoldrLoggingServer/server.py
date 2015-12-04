@@ -9,6 +9,7 @@ from uchicagoldrLogging.formatters import server
 
 # https://docs.python.org/3/howto/logging-cookbook.html#sending-and-receiving-logging-events-across-a-network
 
+
 class LogRecordStreamHandler(socketserver.StreamRequestHandler):
     """Handler for a streaming logging request.
 
@@ -32,7 +33,7 @@ class LogRecordStreamHandler(socketserver.StreamRequestHandler):
                 chunk = chunk + self.connection.recv(slen - len(chunk))
             obj = self.unPickle(chunk)
             record = logging.makeLogRecord(obj)
-            ManualIPFilter().filter(record,self.client_address[0])
+            ManualIPFilter().filter(record, self.client_address[0])
             self.handleLogRecord(record)
 
     def unPickle(self, data):
@@ -51,6 +52,7 @@ class LogRecordStreamHandler(socketserver.StreamRequestHandler):
         # to do filtering, do it at the client end to save wasting
         # cycles and network bandwidth!
         logger.handle(record)
+
 
 class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
     """
@@ -78,15 +80,18 @@ class LogRecordSocketReceiver(socketserver.ThreadingTCPServer):
                 self.handle_request()
             abort = self.abort
 
+
 def main():
-    handlers=[]
-    f=server()
-    
-    termHandler=logging.StreamHandler()
+    handlers = []
+    f = server()
+
+    termHandler = logging.StreamHandler()
     termHandler.setFormatter(f)
     handlers.append(termHandler)
-    
-    fileHandler=logging.handlers.RotatingFileHandler('/Users/balsamo/LDR_Logs/log.txt',maxBytes=1000000000,backupCount=5)
+
+    fileHandler = logging.handlers.RotatingFileHandler(
+        '/Users/balsamo/LDR_Logs/log.txt', maxBytes=1000000000, backupCount=5
+    )
     fileHandler.setFormatter(f)
     handlers.append(fileHandler)
 
