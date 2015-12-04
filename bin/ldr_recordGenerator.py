@@ -176,51 +176,52 @@ def main():
 
         # Instantiate a blank record with all our fields set to a blank string,
         # for bounding loops and no funny business when we try and print it.
-        print("Instantiating Record")
+        logger.info("Instantiating Record")
         record = instantiateRecord()
 
         # Map our defaults right into the record.
-        print("Mapping defaults")
+        logger.info("Mapping defaults")
         meldRecord(record, RecordFieldsDefaults(), DummyReader, DummyMapper)
 
         # Read all the digital acquisition forms,
         # populate the record with their info, address conflicts
-        print("Reading and mapping digital acquisition records.")
+        logger.info("Reading and mapping digital acquisition records.")
         for acqRecord in args.acquisition_record:
             meldRecord(record, acqRecord, ReadAcquisitionRecord,
                        AcquisitionRecordMapping)
 
         # Manual input loop
-        print("Beginning Manual Input Loop")
+        logger.info("Beginning Manual Input Loop")
         manualInput(record)
 
         # Run some automated processing over the record to clean up
         # certain values if required.
-        print("Beginning attempts at automated boolean interpretation")
+        logger.info("Beginning attempts at automated boolean interpretation")
         record = booleanLoop(record, RecordFieldsBooleans())
         # Validate the record fields against their stored regexes
-        print("Validating...")
+        logger.info("Validating...")
         record = validate(record, RecordFieldsValidation())
 
         # File level information population
-        print("Generating file info...")
+        logger.info("Generating file info...")
         record['fileInfo'] = generateFileEntries(args.root, args.item)
 
-        print("Computing total size")
+        logger.info("Computing total size")
         record['totalDigitalSize'] = computeTotalFileSizeFromRecord(record)
 
         # Write two records, one which contains the entirety of the record,
         # including potential internal information, to an internal source,
         # and another which contains information pertinent to the LDR into
         # the admin directory
-        print("Writing whole record to out files.")
+        logger.info("Writing whole record to out files: " +
+                    str(args.out_file))
         for filepath in args.out_file:
             assert(writeNoClobber(record, filepath))
 
-        print("Creating subrecord")
+        logger.info("Creating subrecord")
         pubRecord = createSubRecord(record, LDRFields())
 
-        print("Attempting to write LDR subrecord into staging structure.")
+        logger.info("Attempting to write LDR subrecord into staging structure.")
         ldrRecordPath = None
         validation = ValidateBase(args.item)
         if validation[0] == True:
@@ -244,11 +245,11 @@ def main():
 
         if ldrRecordPath != "":
             writeNoClobber(pubRecord, ldrRecordPath)
-            print("LDR Record written")
+            logger.info("LDR Record written")
         else:
-            print("LDR Record generation skipped.")
+            logger.info("LDR Record generation skipped.")
 
-        print(json.dumps(record, indent=4, sort_keys=True))
+        logger.info(json.dumps(record, indent=4, sort_keys=True))
         # End module code #
         logger.info("ENDS: COMPLETE")
         return 0
