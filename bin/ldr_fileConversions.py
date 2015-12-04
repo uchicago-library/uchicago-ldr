@@ -3,7 +3,8 @@
 # Default package imports begin #
 from argparse import ArgumentParser
 from os import _exit
-from os.path import split, exists, splitext, basename, isdir, isfile, abspath
+from os.path import split, exists, splitext, basename, isdir, isfile, abspath, \
+    join
 # Default package imports end #
 
 # Third party package imports begin #
@@ -407,7 +408,6 @@ def main():
                         '-l', '--log_loc',
                         help="save logging to a file",
                         dest="log_loc",
-
     )
     parser.add_argument(
                         "item",
@@ -426,7 +426,14 @@ def main():
                         "after which they will fail",
                         action="store",
                         type=int
-     )
+    )
+    parser.add_argument(
+                        '--admindir',
+                        help="Enter the location of the admin directory " +
+                        "where the required debug log will be saved",
+                        action="store",
+                        required=True
+    )
     try:
         args = parser.parse_args()
     except SystemExit:
@@ -444,6 +451,17 @@ def main():
         if not exists(split(args.log_loc)[0]):
             logger.critical("The specified log location does not exist!")
             return(1)
+
+    if not exists(args.admindir):
+        logger.critical("The specified admin directory doesn't exist!")
+        return(1)
+    if not isdir(args.admindir):
+        logger.critical("The specified admin directory location isn't" +
+                        "a directory!")
+    stagingDebugLog = DebugFileHandler(join(
+        args.admindir, "fileConversions.txt")
+    )
+    logger.addHandler(stagingDebugLog)
     # End argument post processing #
 
     # Begin user specified log instantiation, if required #
@@ -479,6 +497,7 @@ def main():
         item_path = abspath(args.item)
         global timeout
         timeout = args.timeout
+
         if isdir(item_path):
             b = Batch(root, item_path)
             for item in b.find_items(from_directory=True):
