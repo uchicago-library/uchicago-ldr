@@ -27,9 +27,10 @@ from xml.etree import ElementTree as ET
 from uchicagoldr.batch import Batch
 from uchicagoldr.database import Database
 from uchicagoldrsips.LDRFileTree import Data
-from uchicagoldrsips.SIPS import Aggregation, DateValue, IntegerValue, \
-    LDRURL, PIURL, Proxy, ProvidedCHO, RDFSResource, ResourceMap, RightsURL, \
-    TextValue, URL, Value, WebResource
+from uchicagoldrsips.SIPS import Aggregation, BaseNamespace, DateValue, IntegerValue, \
+    LDRURL, Namespace, PIURL, Proxy, ProvidedCHO, RDFSResource, ResourceMap, RightsURL, \
+    Statement, SubjectURL, TextValue, Triple, URL, Value, WebResource
+from uchicagoldrsips.campub import campub_providedcho, campub_rem, campub_proxy
 
 def evaluate_items(b, createdate):
     for n in b.items:
@@ -164,31 +165,57 @@ def main():
                   "official/repositoryAccessions.db.new",tables_to_bind= \
                   ['record'])
 
-
     class Record(db.base):
         __table__ = Table('record', db.metadata, autoload=True)
-        
+
     b = Batch(args.root, directory = args.directory_path)
     difference_in_path = relpath(args.directory_path, args.root)
-
     query = db.session.query(Record.createdate).filter(Record.receipt == \
                                                        difference_in_path) 
     createdate = query.first()[0]
     items = b.find_items(from_directory = True, 
                          filterable = re_compile(args.pattern))
-
     b.set_items(items)
+
     try:
         generated_data = evaluate_items(b,createdate)
-        count = 0
         objects = {}
         descriptive_metadata = '.dc.xml$'
         representation_file = '.pdf$'
         mets_file = '.mets.xml$'
-        file_definers = ['dc.xml','ALTO','TIFF','JPEG','pdf','mets.xml',
-                         '\d{4}.txt']
+        file_definers = ['dc.xml','ALTO','TIFF','JPEG','pdf','mets.xml']
         file_definer_sequences = ['ALTO','TIFF','JPEG']
         page_number_pattern = '_(\w{4})'
+        edmns = Namespace("edm", "http://www.europeana.eu/schemas/edm/")
+        dcns = Namespace("dc", "http://purl.org/dc/elements/1.1/")
+        dctermsns = Namespace("dcterms", "http://purl.org/dc/terms/")
+        ercns = Namespace("erc", "http://purl.org/kernel/elements/1.1/")
+        foafns = Namespace("foaf", "http://xmlns.com/foaf/0.1/")
+        ldrns = Namespace("ldr", "http://repository.lib.uchicago.edu/ldr/")
+        mixns = Namespace("mix", "http://www.loc.gov/mix/v20")
+        oains = Namespace("oai", "http;//www.openarchives.org/OAI/2.0/")
+        orens = Namespace("ore", "http://www.openarchives.org/ore/terms/")
+        premisns = Namespace("premis", "info:lc/xmlns/premis-v2")
+        rdfsns = Namespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+        rdfns = Namespace("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+        skosns = Namespace("skos", "http://www.w3.org/2004/02/skos/core#")
+        xsdns = Namespace("xsd", "http://www.w3.org/2001/XMLSchema#")
+        basens = BaseNamespace("http://ark.lib.uchicago.edu/ark:/61001/")
+        stdout.write(str(edmns))
+        stdout.write(str(dcns))
+        stdout.write(str(dctermsns))
+        stdout.write(str(ercns))
+        stdout.write(str(foafns))
+        stdout.write(str(ldrns))
+        stdout.write(str(mixns))
+        stdout.write(str(oains))
+        stdout.write(str(orens))
+        stdout.write(str(premisns))
+        stdout.write(str(rdfsns))
+        stdout.write(str(rdfns))
+        stdout.write(str(skosns))
+        stdout.write(str(xsdns))
+        stdout.write(str(basens))
         for n in generated_data:
             id_parts = args.pattern.split('/')
             id_parts_enumerated = [x for x in range(args.object_level)]
@@ -210,12 +237,8 @@ def main():
                 logger.error("{fpath} in {id} could not be matched". \
                              format(fpath = n.canonical_filepath,
                                     id = identifier))
+        logger.info("object list construction completed")
         for k, v in objects.items():
-            logger.error(k)
-            k_identifier = k
-            k_id_part_values = k.split('-')
-            logger.info(k_id_part_values)
-            k_id_directory = '/'.join(k_id_part_values)
             for p in file_definer_sequences:
                 sequence = sorted([(int(re_compile(page_number_pattern). \
                             search(x.canonical_filepath).group(1).lstrip('0')),
@@ -237,40 +260,99 @@ def main():
                 seek = [x for x in v if p in x.canonical_filepath]
                 if len(seek) == 0:
                     logger.error("{identifier}". \
-                                 format(identifier = k_identifier) + \
+                                 format(identifier = k) + \
                                 " missing part {part}".format(part = p))
-            ldrurl = LDRURL(join(k_id_directory, k_identifier))
-            piurl = PIURL("dig/campub", join(k_id_directory, k_identifier))
-            rightsurl = RightsURL()
-            repurl = URL("http://repository.lib.uchicago.edu/")
-            collectionurl = URL("ead/ICU.SPCL.CAMPUB")
-            dcfile = [x for x in v if '.dc.xml' in x.canonical_filepath][0]
-            proxy = Proxy(join(dcfile.accession, dcfile.dirhead, 
-                               dcfile.canonical_filepath))
-            pdffile = [x for x in v if '.pdf' in x.canonical_filepath][0]
+        logger.info("validation completed")
+        for k,v in objects.items():
+            logger.info("starting {id}".format(id = k))
+            identifier = k
+            directory = '/'.join(identifier.split('-'))
+            dcfile = [x for x in v if re_compile('.dc.xml$').search(x.canonical_filepath)][0]
+            logger.info(dir(dcfile))
+            logger.info(dcfile.canonical_filepath)
+            pdffile = [x for x in v if re_compile('.pdf$').search(x.canonical_filepath)][0]
             jpegfile = [x for x in v if 'JPEG' in x.canonical_filepath \
                         and '_0001' in x.canonical_filepath][0]
-            pdfresource = WebResource(join(pdffile.accession, pdffile.dirhead, 
-                                           pdffile.canonical_filepath))
-
+            ldrurl = LDRURL(join(directory, identifier))
+            piurl = PIURL("dig/campub", join(directory, identifier))
+            rightsurl = RightsURL()
+            repurl = SubjectURL("http://repository.lib.uchicago.edu/")
+            collectionurl = SubjectURL("ead/ICU.SPCL.CAMPUB")
             metsfile = [x for x in v 
                         if '.mets.xml' in x.canonical_filepath][0]
-            metsresource = RDFSResource(join(metsfile.accession, 
-                                            metsfile.dirhead,
-                                            metsfile.canonical_filepath))
+            metsresource = RDFSResource(join('/',metsfile.accession, 
+                                             metsfile.dirhead,
+                                             metsfile.canonical_filepath))
+            metsresource.add_statement("dcterms:format", TextValue(metsfile.mimetype))
+            webresource = WebResource(join('/', pdffile.accession, 
+                                           pdffile.dirhead, 
+                                           pdffile.canonical_filepath))
+            webresource.add_statement("dcterms:isFormatOf", ldrurl)
+            webresource.add_statement("premis:objectIdentifierType", 
+                                      TextValue("ARK"))
+            webresource.add_statement("premis:objectIdentifierValue", 
+                                      webresource.subject)
+            webresource.add_statement("dc:format", TextValue(pdffile.mimetype))
+            webresource.add_statement("premis:objectCategory", 
+                                      TextValue("file"))
+            webresource.add_statement("premis:compositionLevel", IntegerValue(0))
+            webresource.add_statement("premis:messageDigestAlgorithm", 
+                                      TextValue("SHA-256")) 
+            webresource.add_statement("premis:messageDigest", 
+                                      TextValue(pdffile.checksum))
+            webresource.add_statement("premis:messageDigestOriginator", 
+                                      TextValue("/sbin/sha256"))
+            webresource.add_statement("premis:size", IntegerValue(pdffile.file_size))
+            webresource.add_statement("premis:formatName", 
+                                      TextValue(pdffile.mimetype))
+            webresource.add_statement("premis:originalName", 
+                                      TextValue(pdffile.canonical_filepath))
+            webresource.add_statement("premis:eventIdentifierType", 
+                                      TextValue("ARK"))
+            webresource.add_statement("premis:eventIdentifierValue", 
+                                      TextValue(pdffile.accession))
+            webresource.add_statement("premis:eventType", 
+                                      TextValue("creation"))
+            webresource.add_statement("premis:eventDateTime", 
+                                      DateValue(createdate))
             pages = set([int(re_compile('_(\w{4}).*'). \
                              search(basename(x.canonical_filepath)). \
                              group(1).lstrip('0'))
                          for x in v if re_compile('_\w{4}.*'). \
                          search(basename(x.canonical_filepath))])
-            numpages = list(pages)[-1]
-            providedcho = ProvidedCHO(k_id_directory)
-            aggregation = Aggregation(k_id_directory)
-            rem = ResourceMap(k_id_directory)
-            proxy.add_statement("dc:format", TextValue(dcfile.mimetype))
-            proxy.add_statement("ore:proxyFor", URL(providedcho.subject))
-            proxy.add_statement("ore:proxyIn", URL(aggregation.subject))
-            stdout.write(str(proxy))
+
+            numpages = list(pages)[-1]            
+            providedcho = ProvidedCHO(join('/',directory))
+            proxy = Proxy(join('/',dcfile.accession,dcfile.dirhead, 
+                               dcfile.canonical_filepath))
+            rem = ResourceMap(join('/rem',directory))
+            aggregation = Aggregation(join('/aggregation',directory))
+            aggregation.add_statement("edm:aggregationregatedCHO", 
+                                      providedcho.subject)
+            aggregation.add_statement("edm:dataProvider", 
+                                      TextValue("University of Chicago Library"))
+            aggregation.add_statement("edm:isShownAt", piurl)
+            aggregation.add_statement("edm:isShownBy", 
+                                      SubjectURL(join(pdffile.accession,
+                                           pdffile.dirhead,
+                                           pdffile.canonical_filepath)))
+            aggregation.add_statement("edm:object", 
+                                      SubjectURL(join(jpegfile.accession, 
+                                               jpegfile.dirhead,
+                                               jpegfile.canonical_filepath)))
+            aggregation.add_statement("edm:provider", 
+                                TextValue("University of Chicago Library"))
+            aggregation.add_statement("dc:rights", rightsurl)
+            aggregation.add_statement("ore:isDescribedBy", 
+                                      rem.subject)
+            aggregation.add_statement("dcterms:created", DateValue(createdate))
+            aggregation.add_statement("dcterms:modified", DateValue(createdate))
+            rem.add_statement("dcterms:created", DateValue(createdate))
+            rem.add_statement("dcterms:modified", DateValue(createdate))
+            rem.add_statement("dcterms:creator", repurl)
+            rem.add_statement("ore:describes", aggregation.subject)
+
+
             providedcho.add_statement("dc:coverage",TextValue("Chicago"))
             providedcho.add_statement("dc:date", DateValue(dcfile.date))
             providedcho.add_statement("edm:year", 
@@ -278,109 +360,145 @@ def main():
             providedcho.add_statement("dc:description", 
                                       TextValue(dcfile.description))
             providedcho.add_statement("dc:identifier", 
-                                      TextValue(dcfile.identifier))
+                                      TextValue(identifier))
             providedcho.add_statement("dc:language", TextValue("en"))
             providedcho.add_statement("dc:rights", rightsurl)
             providedcho.add_statement("dc:title", TextValue(dcfile.title))
             providedcho.add_statement("dc:type", TextValue("text"))
             providedcho.add_statement("edm:type", TextValue("TEXT"))
             providedcho.add_statement("dc:description", 
-                                      URL(aggregation.subject))
+                                      aggregation.subject)
             providedcho.add_statement("dcterms:isPartOf", collectionurl)
+            providedcho.add_statement("dc:format", 
+                                      TextValue(metsfile.mimetype))
 
-            rem.add_statement("dcterms:created", DateValue(createdate))
-            rem.add_statement("dcterms:creator", repurl)
-            rem.add_statement("ore:describes", URL(aggregation.subject))
+            proxy.add_statement("dc:format", TextValue(dcfile.mimetype))
+            proxy.add_statement("ore:proxyFor", providedcho.subject)
+            proxy.add_statement("ore:proxyIn", aggregation.subject)
+            stdout.write(str(proxy))
             stdout.write(str(rem))
-            aggregation.add_statement("edm:aggregatedCHO", 
-                                      URL(providedcho.subject))
-            aggregation.add_statement("edm:dataProvider", 
-                                    TextValue("University of Chicago Library"))
-            aggregation.add_statement("edm:isShownAt", piurl)
-            aggregation.add_statement("edm:isShownBy", 
-                                      URL(join(pdffile.accession,
-                                               pdffile.dirhead,
-                                               pdffile.canonical_filepath)))
-            aggregation.add_statement("edm:object", 
-                                      URL(join(jpegfile.accession, 
-                                               jpegfile.dirhead,
-                                               jpegfile.canonical_filepath)))
-            aggregation.add_statement("edm:provider", 
-                                    TextValue("University of Chicago Library"))
-            aggregation.add_statement("dc:rights", rightsurl)
-            aggregation.add_statement("ore:isDescribedBy", URL(rem.subject))
             stdout.write(str(aggregation))
-            metsresource.add_statement("dc:format", 
-                                       TextValue(metsfile.mimetype))
+            stdout.write(str(webresource))
             stdout.write(str(metsresource))
-            pdfresource.add_statement("dcterms:isFormatOf", ldrurl.subject)
-            pdfresource.add_statement("premis:objectIdentifierType", 
-                                      TextValue("ARK"))
-            pdfresource.add_statement("premis:objectIdentifierValue", 
-                                      URL(pdfresource.subject))
-            pdfresource.add_statement("dc:format", TextValue(pdffile.mimetype))
-            pdfresource.add_statement("premis:objectCategory", 
-                                      TextValue("file"))
-            pdfresource.add_statement("premis:compositionLevel", IntegerValue(0))
-            pdfresource.add_statement("premis:messageDigestAlgorithm", 
-                                      TextValue("SHA-256")) 
-            pdfresource.add_statement("premis:messageDigest", 
-                                      TextValue(pdffile.checksum))
-            pdfresource.add_statement("premis:messageDigestOriginator", 
-                                      TextValue("/sbin/sha256"))
-            pdfresource.add_statement("premis:size", IntegerValue(pdffile.file_size))
-            pdfresource.add_statement("premis:formatName", 
-                                      TextValue(pdffile.mimetype))
-            pdfresource.add_statement("premis:originalName", 
-                                      TextValue(pdffile.canonical_filepath))
-            pdfresource.add_statement("premis:eventIdentifierType", 
-                                      TextValue("ARK"))
-            pdfresource.add_statement("premis:eventIdentifierValue", 
-                                      TextValue(pdffile.accession))
-            pdfresource.add_statement("premis:eventType", 
-                                      TextValue("creation"))
-            pdfresource.add_statement("premis:eventDateTime", 
-                                      DateValue(createdate))
-            stdout.write(str(pdfresource))
-            all_pages = range(1, numpages + 1)
-            for n in all_pages:
-                if n != all_pages[-1]:
-                    next_page = n + 1
-                    canonical_next_page = '0' * (4 - len(str(next_page))) + \
-                                          str(next_page)
-                    canonical_next_page_name = join(k_id_directory,k_identifier  + \
-                                               '_' + canonical_next_page)
-                else:
-                    next_page = None
-                canonical_page = ('0' * (4 - len(str(n)))) + str(n)
-                canonical_page_file_name = k_identifier + '_' + canonical_page
-                page_name = join(k_id_directory,
-                                 canonical_page_file_name)
-                logger.info(page_name)
-                providedcho.add_statement("dcterms:hasPart", "<{url}>". \
-                            format(url = page_name))
-                tiffile = [x for x in v if 'TIFF' in x.canonical_filepath and str('_' + canonical_page) in x.canonical_filepath][0]
-                ocrfile = [x for x in v if 'ALTO' in x.canonical_filepath and str('_' + canonical_page) in x.canonical_filepath][0]
-                jpegfile =  [x for x in v if 'JPEG' in x.canonical_filepath and str('_' + canonical_page) in x.canonical_filepath][0]
-                page_providedcho = ProvidedCHO(page_name)
-                page_aggregation = Aggregation(page_name)
-                page_rem = ResourceMap(page_name)
-                page_webresource = WebResource(join(tiffile.accession, 
-                                                    tiffile.dirhead, 
-                                                    tiffile.canonical_filepath))
-
-                page_jpeg = RDFSResource(join(jpegfile.accession, 
-                                              jpegfile.dirhead,
-                                              jpegfile.canonical_filepath))
-
-                page_ocr = RDFSResource(join(ocrfile.accession, ocrfile.dirhead,
-                                            ocrfile.canonical_filepath))
-
-                page_providedcho.add_statement("dc:description", "<{url}>". \
-                                format(url = join(ocrfile.accession,
-                                                  ocrfile.dirhead,
-                                                  ocrfile.canonical_filepath)))
-
+            range_pages = [('0'*(4 - len(str(x)))) + str(x) for x in range(1,numpages+1)]
+            for pos,i in enumerate(range_pages):
+                logger.info("starting page {page} of {id}".format(page = i, 
+                                                                  id = identifier))
+                file_base = join('/',directory,identifier+'_'+i)
+                agg_url = join('/aggregation',file_base)
+                rem_url = join('/rem',file_base)
+                tiff_file = join('/',directory,'TIFF',identifier+'_'+i)
+                jpeg_file = join('/',directory,'JPEG',identifier+'_'+i)
+                alto_file = join('/',directory,'ALTO',identifier+'_'+i)
+                try:
+                    tiffile = [x for x in v if 'TIFF' in x.canonical_filepath \
+                               and str('_' + i) in \
+                               x.canonical_filepath][0]
+                    page_webresource = WebResource(join('/', tiffile.accession, 
+                                                        tiffile.dirhead, 
+                                                        tiffile.canonical_filepath))
+                    page_webresource.add_statement("mix:fileSize", 
+                                                   IntegerValue(tiffile.file_size))
+                    page_webresource.add_statement("mix:formatName", 
+                                                   TextValue(tiffile.mimetype))
+                    page_webresource.add_statement("premis:objectIdentifierType", 
+                                                   TextValue("ARK"))
+                    page_webresource.add_statement("premis:objectIdentifierValue", 
+                                                   page_webresource.subject)
+                    page_webresource.add_statement("dc:format", TextValue(tiffile.mimetype))
+                    page_webresource.add_statement("premis:objectCategory", 
+                                                   TextValue("file"))
+                    page_webresource.add_statement("premis:compositionLevel", IntegerValue(0))
+                    page_webresource.add_statement("premis:messageDigestAlgorithm", 
+                                                   TextValue("SHA-256")) 
+                    page_webresource.add_statement("premis:messageDigest", 
+                                                   TextValue(tiffile.checksum))
+                    page_webresource.add_statement("premis:messageDigestOriginator", 
+                                                   TextValue("/sbin/sha256"))
+                    page_webresource.add_statement("premis:size", IntegerValue(tiffile.file_size))
+                    page_webresource.add_statement("premis:formatName", 
+                                                   TextValue(tiffile.mimetype))
+                    page_webresource.add_statement("premis:originalName", 
+                                                   TextValue(tiffile.canonical_filepath))
+                    page_webresource.add_statement("premis:eventIdentifierType", 
+                                                   TextValue("ARK"))
+                    page_webresource.add_statement("premis:eventIdentifierValue", 
+                                                   TextValue(tiffile.accession))
+                    page_webresource.add_statement("premis:eventType", 
+                                                   TextValue("creation"))
+                    page_webresource.add_statement("premis:eventDateTime", 
+                                                   DateValue(createdate))
+                    if getattr(tiffile,'mixchecksum',None):
+                        page_webresource.add_statement("mix:messageDigestAlgorithm", 
+                                                       TextValue("MD5"))
+                        page_webresource.add_statement("mix:messageDigest", 
+                                                       TextValue(tiffile.mixchecksum))
+                    if getattr(tiffile,'imageheight',None):
+                        page_webresource.add_statement("mix:imageHeight",
+                                                       IntegerValue(int(tiffile.imageheight)))
+                    if getattr(tiffile,'imagewidth',None):
+                        page_webresource.add_statement("mix:imageWidth", 
+                                                       IntegerValue(int(tiffile.imagewidth)))
+                    if getattr(tiffile,'bitspersample',None):
+                        page_webresource.add_statement("mix:bitsPerSample",
+                                                       TextValue(tiffile.bitspersample))
+                    stdout.write(str(page_webresource))
+                except IndexError:
+                    logger.error("{page} from {record} is missing tiff".format(page = i, 
+                                                                            record = identifier))                    
+                try:
+                    ocrfile = [x for x in v if 'ALTO' in x.canonical_filepath \
+                               and str('_' + i) in \
+                               x.canonical_filepath][0]
+                    page_ocrresource = RDFSResource(join('/', ocrfile.accession,
+                                                         ocrfile.dirhead,
+                                                         ocrfile.canonical_filepath))
+                    stdout.write(str(page_ocrresource))
+                except IndexError:
+                    logger.error("{page} from {record} is missing alto".format(page = i, 
+                                                                            record = identifier))
+                try:
+                    jpegfile =  [x for x in v if 'JPEG' in \
+                                 x.canonical_filepath \
+                                 and str('_' + i) in \
+                                 x.canonical_filepath][0]
+                    page_jpegresource = RDFSResource(join('/', jpegfile.accession,
+                                                          jpegfile.dirhead,
+                                                          jpegfile.canonical_filepath))
+                    page_jpegresource.add_statement("dc:format", 
+                                                    TextValue(jpegfile.mimetype))
+                    page_ocrresource.add_statement("dc:format",
+                                                   TextValue(ocrfile.mimetype))
+                    stdout.write(str(page_ocrresource))
+                except IndexError:
+                    logger.error("{page} from {record} is missing jpeg".format(page = i, 
+                                                                            record = identifier))
+                page_providedcho = ProvidedCHO(file_base)
+                page_aggregation = Aggregation(agg_url)
+                page_rem = ResourceMap(rem_url)
+                page_aggregation.add_statement("edm:aggregatedCHO", 
+                                               page_providedcho.subject)
+                page_aggregation.add_statement("edm:dataProvider",
+                                    TextValue("University of Chicago Library"))
+                page_aggregation.add_statement("edm:isShownBy", 
+                                               page_webresource.subject)
+                page_aggregation.add_statement("edm:object", 
+                                               page_jpegresource.subject)
+                page_aggregation.add_statement("edm:provider", 
+                                TextValue("University of Chicago Library"))
+                page_aggregation.add_statement("edm:rights", 
+                                               rightsurl)
+                page_aggregation.add_statement("ore:isDescribedBy", 
+                                               page_rem.subject)
+                page_aggregation.add_statement("dcterms:created", DateValue(createdate))
+                page_aggregation.add_statement("dcterms:modified", DateValue(createdate))
+                page_rem.add_statement("dc:created", 
+                                       DateValue(createdate))
+                page_aggregation.add_statement("dcterms:modified", DateValue(createdate))
+                page_rem.add_statement("dcterms:creator", 
+                                       repurl)
+                providedcho.add_statement("dcterms:hasPart",
+                            SubjectURL(join(file_base)))
                 page_providedcho.add_statement("dc:language", TextValue("en"))
                 page_providedcho.add_statement("dc:rights", 
                                                rightsurl)
@@ -388,67 +506,24 @@ def main():
                 page_providedcho.add_statement("edm:type", TextValue("TEXT"))
                 page_providedcho.add_statement("dc:title", 
                                                TextValue("Page {number}". \
-                                                    format(number = str(n))))
+                                        format(number = i.lstrip('0'))))
                 page_providedcho.add_statement("dcterms:isPartOf",
-                                               URL(providedcho.subject))
-                if next_page:
+                                               providedcho.subject)
+                if int(i.lstrip('0')) == numpages:
+                    logger.info("last page")
+                else:
+                    next_page = range_pages[pos+1]
                     page_providedcho.add_statement("edm:isNextInSequence",
-                                    URL(join("/",canonical_next_page_name)))
-                stdout.write(str(page_providedcho))
-                page_aggregation.add_statement("edm:aggregatedCHO", 
-                                               URL(page_providedcho.subject))
-                page_aggregation.add_statement("edm:dataProvider",
-                                    TextValue("University of Chicago Library"))
-                page_aggregation.add_statement("edm:isShownBy", 
-                                               URL(page_webresource.subject))
-                page_aggregation.add_statement("edm:object", 
-                                               URL(page_jpeg.subject))
-                page_aggregation.add_statement("edm:provider", 
-                                TextValue("University of Chicago Library"))
-                page_aggregation.add_statement("edm:rights", 
-                                               URL(rightsurl.subject))
-                page_aggregation.add_statement("ore:isDescribedBy", 
-                                               URL(page_rem.subject))
-                stdout.write(str(page_aggregation))
-                page_rem.add_statement("dc:created", 
-                                       DateValue(createdate))
-                page_rem.add_statement("dcterms:creator", 
-                                       URL(repurl.subject))
-                stdout.write(str(page_rem))
-                page_webresource.add_statement("mix:fileSize", 
-                                               IntegerValue(tiffile.file_size))
-                page_webresource.add_statement("mix:formatName", 
-                                               TextValue(tiffile.mimetype))
-                if getattr(tiffile,'mixchecksum',None):
-                    page_webresource.add_statement("mix:messageDigestAlgorithm", 
-                                                   TextValue("MD5"))
-                    page_webresource.add_statement("mix:messageDigest", 
-                                                   TextValue(tiffile.mixchecksum))
-                if getattr(tiffile,'imageheight',None):
-                    page_webresource.add_statement("mix:imageHeight",
-                                                   IntegerValue(int(tiffile.imageheight)))
-                if getattr(tiffile,'imagewidth',None):
-                    page_webresource.add_statement("mix:imageWidth", 
-                                                   IntegerValue(int(tiffile.imagewidth)))
-                if getattr(tiffile,'bitspersample',None):
-                    page_webresource.add_statement("mix:bitsPerSample",
-                                                   TextValue(tiffile.bitspersample))
-                stdout.write(str(page_webresource))
-                page_jpegresource = RDFSResource(join(jpegfile.accession,
-                                                      jpegfile.dirhead,
-                                                      jpegfile.canonical_filepath))
-                page_ocrresource = RDFSResource(join(ocrfile.accession,
-                                                     ocrfile.dirhead,
-                                                     ocrfile.canonical_filepath))
-                
-                page_ocrresource.add_statement("dc:format",
-                                               TextValue(ocrfile.mimetype))
-                stdout.write(str(page_ocrresource))
-                page_jpegresource.add_statement("dc:format", 
-                                        TextValue(jpegfile.mimetype))
-                stdout.write(str(page_jpegresource))
-            stdout.write(str(providedcho))
+                        SubjectURL(join("/",directory, identifier+'_'+next_page)))
 
+                stdout.write(str(page_providedcho))
+                stdout.write(str(page_aggregation))
+                stdout.write(str(page_rem))
+
+                logger.info("finished page {page} of {id}".format(page = i, 
+                                                            id = identifier))
+            stdout.write(str(providedcho))
+            logger.info("finished {id}".format(id = k))
         return 0
     except KeyboardInterrupt:
          logger.error("Program aborted manually")
