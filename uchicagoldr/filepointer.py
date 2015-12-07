@@ -16,6 +16,9 @@ class FilePointer(object):
         return (isinstance(other, FilePointer) and
                 hash(self) == hash(other))
 
+    def __repr__(self):
+        return "FilePointer object with identifer {}".format(self.identifier)
+
     def get_identifier(self):
         return self.identifier
 
