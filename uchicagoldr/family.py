@@ -16,9 +16,11 @@ class Family(object):
         self.children = children
         self.descs = descs
 
-    def __iter__(self):
-        for child in self.children:
-            yield child
+    def __repr__(self):
+        return "Locked: {}\nChildren: {}\nDescs: {}".format(
+                                                str(self.locked),
+                                                str(self.children),
+                                                str(self.descs))
 
     def __hash__(self):
         assert(self.locked)
@@ -30,15 +32,13 @@ class Family(object):
             objHash = hash(objHash ^ addHash)
         return objHash
 
-    def __repr__(self):
-        return "Locked: {}\nChildren: {}\nDescs: {}".format(
-                                                str(self.locked),
-                                                str(self.children),
-                                                str(self.descs))
-
     def __eq__(self, other):
         return (isinstance(other, Family) and
                 hash(self) == hash(other))
+
+    def __iter__(self):
+        for child in self.children:
+            yield child
 
     def _test_limited_dict_values(self, dictionary):
         limited = True
@@ -153,9 +153,10 @@ class Family(object):
             )
             self.descs[key] = value
 
-    def remove_desc(self, key):
+    def remove_desc(self, key_to_del):
         assert(not self.locked)
-        pass
+        self.descs = {key: value for key, value in self.desc.items()
+                      if key != key_to_del}
 
     def set_descs(self, new_descs):
         assert(not self.locked)
