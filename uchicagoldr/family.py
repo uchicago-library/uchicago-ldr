@@ -153,10 +153,31 @@ class Family(object):
             )
             self.descs[key] = value
 
-    def remove_desc(self, key_to_del):
+    def _remove_desc_by_key(self, key_to_del):
+        try:
+            del self.descs[key_to_del]
+            return (key_to_del, True)
+        except:
+            return (key_to_del, False)
+
+    def _remove_desc_by_value(self, value_to_del):
+        keys_to_del = []
+        for key, value in self.descs.items():
+            if value == value_to_del:
+                keys_to_del.append(key)
+        returns = []
+        for key in keys_to_del:
+            returns.append((key, self._remove_desc_by_key(key)))
+        return returns
+
+    def remove_desc(self, key_to_del=None, value_to_del=None):
         assert(not self.locked)
-        self.descs = {key: value for key, value in self.desc.items()
-                      if key != key_to_del}
+        returns = []
+        if key_to_del is not None:
+            returns.append(self._remove_desc_by_key(key_to_del))
+        if value_to_del is not None:
+            returns.append(self._remove_desc_by_value(value_to_del))
+        return returns
 
     def set_descs(self, new_descs):
         assert(not self.locked)
