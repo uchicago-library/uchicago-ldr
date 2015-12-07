@@ -16,11 +16,25 @@ class Family(object):
         self.children = children
         self.descs = descs
 
+    def __iter__(self):
+        for child in self.children:
+            yield child
+
     def __hash__(self):
         assert(self.locked)
         objHash = 0
         for child in self.children:
             objHash = hash(objHash ^ hash(child))
+        for k, v in self.descs:
+            addHash = hash(k)+hash(v)
+            objHash = hash(objHash ^ addHash)
+        return objHash
+
+    def __repr__(self):
+        return "Locked: {}\nChildren: {}\nDescs: {}".format(
+                                                str(self.locked),
+                                                str(self.children),
+                                                str(self.descs))
 
     def __eq__(self, other):
         return (isinstance(other, Family) and
@@ -28,37 +42,70 @@ class Family(object):
 
     def _test_limited_dict_values(self, dictionary):
         limited = True
-        for entry in dictionary:
-            value = dictionary[entry]
+        for key, value in dictionary.items():
+            if not isinstance(key, str):
+                return False
             if not isinstance(value, str) and  \
                     not isinstance(value, int) and \
-                    not isinstance(value, None):
+                    not isinstance(value, dict) and \
+                    value is not None:
                 return False
             if isinstance(value, dict):
-                limited = limited and self._limit_dict_values(value)
+                limited = limited and self._test_limited_dict_values(value)
                 if limited is False:
                     return False
         return limited
 
+    def _dict_to_nested_tuples(self, dictionary):
+        tuplesList = []
+        sortedKeys = sorted(dictionary)
+
+        for key in sortedKeys:
+            value = dictionary[key]
+            if isinstance(value, dict):
+                tuplesList.append((key, self._dict_to_nested_tuples(value)))
+            else:
+                tuplesList.append((key, value))
+        return tuple(tuplesList)
+
+    def _nested_tuples_to_dict(self, tuples):
+        dictionary = {}
+        for entry in tuples:
+            key, value = entry
+            assert(isinstance(key, str))
+            if isinstance(value, tuple):
+                dictionary[key] = self._nested_tuples_to_dict(value)
+            else:
+                assert(
+                    isinstance(value, str) or
+                    isinstance(value, int) or
+                    value is None
+                )
+                dictionary[key] = value
+        return dictionary
+
     def lock(self):
-        self.locked = True
+        assert(not self.locked)
+        try:
+            self.children = tuple(self.children)
+            self.descs = self._dict_to_nested_tuples(self.descs)
+            self.locked = True
+            return True
+        except:
+            return False
 
     def unlock(self):
-        self.locked = False
-
-    def __lock_children(self):
-        pass
-
-    def __unlock_children(self):
-        pass
-
-    def __lock_descs(self):
-        pass
-
-    def __unlock_descs(self):
-        pass
+        assert(self.locked)
+        try:
+            self.children = list(self.children)
+            self.descs = self._nested_tuples_to_dict(self.descs)
+            self.locked = False
+            return True
+        except:
+            return False
 
     def add_child(self, child, index=None):
+        assert(not self.locked)
         assert(isinstance(child, Family) or
                isinstance(child, FilePointer))
         assert(child not in self.children)
@@ -71,6 +118,7 @@ class Family(object):
             self.children.insert(index, child)
 
     def remove_child(self, child=None, index=None):
+        assert(not self.locked)
         assert(child is not None or index is not None)
         if child is not None:
             try:
@@ -84,19 +132,35 @@ class Family(object):
                 return None
 
     def set_children(self, new_children):
-        pass
+        assert(not self.locked)
+        assert(isinstance(new_children, list))
+        self.children = new_children
 
     def get_children(self):
         return self.children
 
     def add_desc(self, key, value):
-        pass
+        assert(not self.locked)
+        assert(isinstance(key, str))
+        if isinstance(value, dict):
+            assert(self._test_limited_limited_dict_values(value))
+            self.descs[key] = value
+        else:
+            assert(
+                isinstance(value, str) or
+                isinstance(value, int) or
+                isinstance(value, None)
+            )
+            self.descs[key] = value
 
     def remove_desc(self, key):
+        assert(not self.locked)
         pass
 
-    def set_descs(self, new_desc):
-        pass
+    def set_descs(self, new_descs):
+        assert(not self.locked)
+        assert(self._test_limited_dict_values(new_descs))
+        self.descs = new_descs
 
     def get_descs(self):
         return self.desc
