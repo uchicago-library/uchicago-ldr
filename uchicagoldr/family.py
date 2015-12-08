@@ -26,9 +26,9 @@ class Family(object):
     def __hash__(self):
         objHash = 0
         for child in self.children:
-            objHash = objHash ^ hash(child)
+            objHash = (objHash << 1) ^ hash(child)
         for desc in self.descs:
-            objHash = objHash ^ hash(desc)
+            objHash = (objHash << 1) ^ hash(desc)
         return objHash
 
     def __eq__(self, other):
