@@ -19,6 +19,9 @@ class LogMessage(object):
         self.warnings = []
         self.send_message(self)
 
+    def add_client_key(self, client_key):
+        self.client_key = client_key
+
     def send_message(self):
         m = MessageForwarder(self)
 
@@ -28,7 +31,7 @@ class LogMessage(object):
 
     def flag_as_unsuccessfully_sent():
         self.tryDate = datetime.now()
-
+        
 class MessageForwarder(object):
     message = None
     server_endpoint = "http://example.com/"
@@ -42,7 +45,7 @@ class MessageForwarder(object):
         self.forward_message_along(self.message)
 
     def _object_to_dict(self, message_object):
-        retur vars(message_object)
+        return vars(message_object)
 
     def forward_message_along(self):
         """
@@ -52,9 +55,8 @@ class MessageForwarder(object):
 
         If connection is unsuccessful, pass message to the local logqueue for retrying later
         """
+
         dictionary = _object_to_dict(self.message)
-        headers = {'client-key':'a_key',
-                   'url_checksum':'a_checksum'}
         data = urlencode(dicitonary)
         request = urlencode(self.server_endpoint, data, headers)
         response = urlopen(request)

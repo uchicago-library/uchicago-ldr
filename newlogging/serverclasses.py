@@ -6,16 +6,17 @@ class MessageReceiver(object):
     self.receipt_date = datetime.now()
     
     def __init__(self, received_data):
-        assert callable(getattr(received_data,'info', None))
-        validation = MessageValidate(self.message)
-        assert validation.validate_client(self.message_headers.get('client_key'))
+        self.message = received_data['value']
+        client_key = received_data['key']
+        validation = MessageValidate(self.message, client_key)
+        assert validation.validate_client()
         assert validation.validate_url_checksum(f.url, 
                                 self.message_headers.get('url_checksum'),
                                 self.message_headers.get('client_key'))
         self.message = received_data.read()
         self.message_headers = received_data.headers.read()
         self.receipt_date = datetime.now()
-
+        
     def __str__(self):
         return str("received {rdate} -- performed {pdate} --- ". \
                    format(rdate = \
@@ -25,8 +26,8 @@ class MessageReceiver(object):
                    "user {user}: message \"{message\"".format( \
                                             user = \
                                             self.message['user'],
-                                            message = self.message['value'])
-
+                                            message = self.message['value']))
+        
 class MessageValidate(object):
     self.message = None
     self.client_key = None
