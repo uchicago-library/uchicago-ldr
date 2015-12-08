@@ -14,6 +14,8 @@ class Family(object):
     version = "0.0.1"
 
     def __init__(self, children=[], descs=[]):
+        assert(isinstance(children, list))
+        assert(isinstance(descs, list))
         for child in children:
             assert(isinstance(child, Family) or
                    isinstance(child, FilePointer)
@@ -196,13 +198,12 @@ class Family(object):
         return returns
 
     def write(self, path=getcwd(), file_name=None, clobber=False):
+        if file_name is None:
+            file_name = str(hash(self))+'.family'
         assert(isinstance(path, str))
         assert(isinstance(file_name, str))
         assert(isinstance(clobber, bool))
         assert(isdir(path))
         if clobber is False:
             assert(not exists(join(path, file_name)))
-        if file_name is not None:
-            dump(self, open(join(path, file_name+'.family'), 'wb'))
-        else:
-            dump(self, open(join(path, str(hash(self))+'.family'), 'wb'))
+        dump(self, open(join(path, file_name), 'wb'))
