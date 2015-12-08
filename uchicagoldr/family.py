@@ -8,9 +8,7 @@ from uchicagoldr.keyvaluepair import KeyValuePair
 
 class Family(object):
 
-    children = None
-    descs = None
-    # For pickling #.#.# = incompat.not_a_good_idea.minor_upgrade
+    # For pickling... #.#.# = incompat.not_a_good_idea.minor_upgrade
     version = "0.0.1"
 
     def __init__(self, children=[], descs=[]):
@@ -32,14 +30,12 @@ class Family(object):
                                                )
 
     def __str__(self, depth=0):
-        strRep = "\t"*depth+"Children: "
-        for child in self.children:
-            strRep = strRep+'\n'+"\t"*depth+" "+child.__str__(depth=depth+1)
-        strRep = strRep+"\n"+"\t"*depth+"Descs: "
-        if len(self.descs) == 0:
-            strRep = strRep+'\n'
+        strRep = "\t"*depth+"Descs: "
         for desc in self.descs:
             strRep = strRep+'\n'+'\t'*depth+" "+str(desc)
+        strRep = strRep+"\n"+"\t"*depth+"Children: "
+        for child in self.children:
+            strRep = strRep+'\n'+"\t"*depth+" "+child.__str__(depth=depth+1)
         return strRep
 
     def __hash__(self):
@@ -78,6 +74,27 @@ class Family(object):
                 return True
         return False
 
+    def _uniq_child(self, new_child):
+        if len(self.get_children() == 0):
+            return True
+        for child in self.children:
+            if child == new_child:
+                return False
+            if isinstance(child, Family):
+                return self._uniq_child(new_child)
+
+    def _check_recursion(self, seen=[]):
+        if self in seen:
+            return False
+        if isinstance(self, FilePointer):
+            return
+        if len(self.children) == 0:
+            return
+        seen.append(self)
+        for child in self.children:
+            child._check_recursion(seen=seen)
+        return True
+
     def add_child(self, child, index=None):
         assert(isinstance(child, Family) or
                isinstance(child, FilePointer))
@@ -89,6 +106,7 @@ class Family(object):
             assert(isinstance(index, int))
             assert(index > -1 and index < len(self.children))
             self.children.insert(index, child)
+#        assert(self._check_recursion())
 
     def remove_child(self, child=None, index=None):
         assert(child is not None or index is not None)
@@ -113,6 +131,7 @@ class Family(object):
                 isinstance(entry, FilePointer)
             )
         self.children = new_children
+        assert(self._check_recursion())
 
     def get_children(self):
         return self.children

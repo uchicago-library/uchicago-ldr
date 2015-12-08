@@ -1,10 +1,5 @@
 class KeyValuePair(object):
 
-    key = None
-    value = None
-    nested = False
-    objHash = None
-
     def __init__(self, key, value=""):
         assert(isinstance(key, str))
         assert(isinstance(value, str) or
