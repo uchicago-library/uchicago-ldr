@@ -5,8 +5,8 @@ class KeyValuePair(object):
     nested = False
     objHash = None
 
-    def __init__(self, key, value):
-        assert(isinstance(key,str))
+    def __init__(self, key, value=""):
+        assert(isinstance(key, str))
         assert(isinstance(value, str) or
                isinstance(value, int) or
                isinstance(value, float) or
@@ -17,7 +17,7 @@ class KeyValuePair(object):
             self.nested = True
         self.key = key
         self.value = value
-        self.objHash = hash(key) ^ hash(value)
+        self.objHash = (hash(key) << 1) ^ hash(value)
 
     def __eq__(self, other):
         return isinstance(other, KeyValuePair) and hash(other) == hash(self)

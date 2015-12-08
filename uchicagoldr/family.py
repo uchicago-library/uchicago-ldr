@@ -1,3 +1,7 @@
+from pickle import dump
+from os import getcwd
+from os.path import exists, isdir, join
+
 from uchicagoldr.filepointer import FilePointer
 from uchicagoldr.keyvaluepair import KeyValuePair
 
@@ -6,6 +10,8 @@ class Family(object):
 
     children = None
     descs = None
+    # For pickling #.#.# = incompat.not_a_good_idea.minor_upgrade
+    version = "0.0.1"
 
     def __init__(self, children=[], descs=[]):
         for child in children:
@@ -22,6 +28,17 @@ class Family(object):
                                                 str(self.children),
                                                 str(self.descs)
                                                )
+
+    def __str__(self, depth=0):
+        strRep = "\t"*depth+"Children: "
+        for child in self.children:
+            strRep = strRep+'\n'+"\t"*depth+" "+child.__str__(depth=depth+1)
+        strRep = strRep+"\n"+"\t"*depth+"Descs: "
+        if len(self.descs) == 0:
+            strRep = strRep+'\n'
+        for desc in self.descs:
+            strRep = strRep+'\n'+'\t'*depth+" "+str(desc)
+        return strRep
 
     def __hash__(self):
         objHash = 0
@@ -53,6 +70,12 @@ class Family(object):
                 returns.append(self.descs.pop(self.descs.index(desc)))
         return returns
 
+    def _key_conflict(self, new_key):
+        for entry in self.descs:
+            if entry.get_key() == new_key:
+                return True
+        return False
+
     def add_child(self, child, index=None):
         assert(isinstance(child, Family) or
                isinstance(child, FilePointer))
@@ -67,6 +90,7 @@ class Family(object):
 
     def remove_child(self, child=None, index=None):
         assert(child is not None or index is not None)
+        assert(bool(child) + bool(index) == 1)  # xor
         assert(not (child and index))
         if child is not None:
             try:
@@ -81,6 +105,11 @@ class Family(object):
 
     def set_children(self, new_children):
         assert(isinstance(new_children, list))
+        for entry in new_children:
+            assert(
+                isinstance(entry, Family) or
+                isinstance(entry, FilePointer)
+            )
         self.children = new_children
 
     def get_children(self):
@@ -103,6 +132,7 @@ class Family(object):
     def add_desc(self, keyValuePair, index=None):
         assert(isinstance(keyValuePair, KeyValuePair))
         assert(keyValuePair not in self.descs)
+        assert(not self._key_conflict(keyValuePair.get_key()))
         if index is None:
             self.descs.append(keyValuePair)
         else:
@@ -111,6 +141,7 @@ class Family(object):
             self.descs.insert(index, keyValuePair)
 
     def remove_desc(self, key_to_del=None, value_to_del=None, index=None):
+        assert(bool(key_to_del) + bool(value_to_del) + bool(index) == 1)  # xor
         returns = []
         if key_to_del is not None:
             returns.append(self._remove_desc_by_key(key_to_del))
@@ -133,7 +164,45 @@ class Family(object):
     def get_descs(self):
         return self.descs
 
-    def get_desc(self, key):
+    def get_desc(self, key=None, value=None, index=None):
+        returns = self.get_desc_or(key=key, value=value, index=index)
+        return returns
+
+    def get_desc_or(self, key=None, value=None, index=None):
+        returns = []
+        cur_index = -1
         for desc in self.descs:
-            if desc.get_key() == key:
-                return desc
+            cur_index += 1
+            if desc.get_key() == key or \
+                    desc.get_value() == value or \
+                    cur_index == index:
+                returns.append(desc)
+        return returns
+
+    def get_desc_and(self, key=None, value=None, index=None):
+        returns = []
+        cur_index = -1
+        for desc in self.descs:
+            cur_index += 1
+            match = 0
+            if key is not None and key == desc.get_key():
+                match += 1
+            if value is not None and value == desc.get_value():
+                match += 1
+            if index is not None and cur_index == index:
+                match += 1
+            if match == 3:
+                returns.append(desc)
+        return returns
+
+    def write(self, path=getcwd(), file_name=None, clobber=False):
+        assert(isinstance(path, str))
+        assert(isinstance(file_name, str))
+        assert(isinstance(clobber, bool))
+        assert(isdir(path))
+        if clobber is False:
+            assert(not exists(join(path, file_name)))
+        if file_name is not None:
+            dump(self, open(join(path, file_name+'.family'), 'wb'))
+        else:
+            dump(self, open(join(path, str(hash(self))+'.family'), 'wb'))
