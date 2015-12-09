@@ -1,9 +1,11 @@
 from pickle import dump
 from os import getcwd
 from os.path import exists, isdir, join
+from uuid import uuid4
 
 from uchicagoldr.filepointer import FilePointer
 from uchicagoldr.keyvaluepair import KeyValuePair
+from uchicagoldr.keyvaluepair import KeyValuePairList
 
 
 class Family(object):
@@ -11,9 +13,9 @@ class Family(object):
     # For pickling... #.#.# = incompat.not_a_good_idea.minor_upgrade
     version = "0.0.1"
 
-    def __init__(self, children=[], descs=[]):
+    def __init__(self, children=[], descs=KeyValuePairList()):
         assert(isinstance(children, list))
-        assert(isinstance(descs, list))
+        assert(isinstance(descs, KeyValuePairList))
         for child in children:
             assert(isinstance(child, Family) or
                    isinstance(child, FilePointer)
@@ -22,6 +24,7 @@ class Family(object):
             assert(isinstance(desc, KeyValuePair))
         self.children = children
         self.descs = descs
+        self.uuid = str(uuid4())
 
     def __repr__(self):
         return "Children: {}\nDescs: {}".format(
@@ -38,17 +41,11 @@ class Family(object):
             strRep = strRep+'\n'+"\t"*depth+" "+child.__str__(depth=depth+1)
         return strRep
 
-    def __hash__(self):
-        objHash = 0
-        for child in self.children:
-            objHash = (objHash << 1) ^ hash(child)
-        for desc in self.descs:
-            objHash = (objHash << 1) ^ hash(desc)
-        return objHash
-
     def __eq__(self, other):
-        return (isinstance(other, Family) and
-                hash(self) == hash(other))
+        eq = isinstance(other, Family)
+        eq = eq and self.children == other.get_children()
+        eq = eq and self.descs == other.get_descs()
+        return eq
 
     def __iter__(self):
         for child in self.children:

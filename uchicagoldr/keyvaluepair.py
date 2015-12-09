@@ -1,3 +1,6 @@
+from uchicagoldr.keyvaluepairlist import KeyValuePairList
+
+
 class KeyValuePair(object):
 
     def __init__(self, key, value=""):
@@ -6,9 +9,9 @@ class KeyValuePair(object):
                isinstance(value, int) or
                isinstance(value, float) or
                isinstance(value, complex) or
-               isinstance(value, KeyValuePair)
+               isinstance(value, KeyValuePairList)
                )
-        if isinstance(value, KeyValuePair):
+        if isinstance(value, KeyValuePairList):
             self.nested = True
         self.key = key
         self.value = value
