@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from uchicagoldr.filepointer import FilePointer
 from uchicagoldr.keyvaluepair import KeyValuePair
-from uchicagoldr.keyvaluepair import KeyValuePairList
+from uchicagoldr.keyvaluepairlist import KeyValuePairList
 
 
 class Family(object):
@@ -13,38 +13,72 @@ class Family(object):
     # For pickling... #.#.# = incompat.not_a_good_idea.minor_upgrade
     version = "0.0.1"
 
-    def __init__(self, children=[], descs=KeyValuePairList()):
-        assert(isinstance(children, list))
-        assert(isinstance(descs, KeyValuePairList))
-        for child in children:
-            assert(isinstance(child, Family) or
-                   isinstance(child, FilePointer)
-                   )
-        for desc in descs:
-            assert(isinstance(desc, KeyValuePair))
-        self.children = children
-        self.descs = descs
+    def __init__(self, children=None, descs=None):
+
+        self.children = []
+        self.descs = []
+
+        assert(isinstance(children, list) or children is None)
+        assert(isinstance(descs, KeyValuePairList) or descs is None)
+        if children is not None:
+            for child in children:
+                self.add_child(child)
+        if descs is not None:
+            for desc in descs:
+                self.add_desc(desc)
         self.uuid = str(uuid4())
 
     def __repr__(self):
-        return "Children: {}\nDescs: {}".format(
-                                                str(self.children),
-                                                str(self.descs)
-                                               )
+        return "UUID: {}\nChildren: {}\nDescs: {}".format(self.uuid,
+                                                          str(self.children),
+                                                          str(self.descs)
+                                                          )
+
+    def add_child(self, child, index=None):
+        assert(isinstance(child, Family) or
+               isinstance(child, FilePointer))
+        for cur_child in self.get_children():
+            assert(child is not cur_child)
+
+        if index is None:
+            self.children.append(child)
+        else:
+            assert(isinstance(index, int))
+            assert(index > -1 and index < len(self.children))
+            self.children.insert(index, child)
+
+    def remove_child(self, child=None, index=None):
+        assert(child is not None or index is not None)
+        assert(bool(child) + bool(index) == 1)  # xor
+        assert(not (child and index))
+        if child is not None:
+            try:
+                return self.children.pop(self.children.index(child))
+            except ValueError:
+                return None
+        if index is not None:
+            try:
+                return self.children.pop(index)
+            except ValueError:
+                return None
 
     def __str__(self, depth=0):
-        strRep = "\t"*depth+"Descs: "
-        for desc in self.descs:
-            strRep = strRep+'\n'+'\t'*depth+" "+str(desc)
-        strRep = strRep+"\n"+"\t"*depth+"Children: "
-        for child in self.children:
-            strRep = strRep+'\n'+"\t"*depth+" "+child.__str__(depth=depth+1)
+        strRep = "UUID: {}\n".format(self.uuid)
+        strRep = strRep+"\t"*depth+"Descs: "+str(len(self.get_descs()))
+        for desc in self.get_descs():
+            strRep = strRep+'\n'+'\t'*depth+" "+desc.__str__()
+        strRep = strRep+"\n"+"\t"*depth+"Children: " + \
+                                        str(len(self.get_children()))
+        for child in self.get_children():
+            strRep = strRep+'\n'+"\t"*(depth+1)+child.__str__(depth=depth+1)
+        if len(self.get_children()) == 0:
+            strRep += '\n'
         return strRep
 
     def __eq__(self, other):
         eq = isinstance(other, Family)
-        eq = eq and self.children == other.get_children()
-        eq = eq and self.descs == other.get_descs()
+        eq = eq and self.get_children() == other.get_children()
+        eq = eq and self.get_descs() == other.get_descs()
         return eq
 
     def __iter__(self):
@@ -91,34 +125,6 @@ class Family(object):
         for child in self.children:
             child._check_recursion(seen=seen)
         return True
-
-    def add_child(self, child, index=None):
-        assert(isinstance(child, Family) or
-               isinstance(child, FilePointer))
-        assert(child not in self.children)
-
-        if index is None:
-            self.children.append(child)
-        else:
-            assert(isinstance(index, int))
-            assert(index > -1 and index < len(self.children))
-            self.children.insert(index, child)
-#        assert(self._check_recursion())
-
-    def remove_child(self, child=None, index=None):
-        assert(child is not None or index is not None)
-        assert(bool(child) + bool(index) == 1)  # xor
-        assert(not (child and index))
-        if child is not None:
-            try:
-                return self.children.pop(self.children.index(child))
-            except ValueError:
-                return None
-        if index is not None:
-            try:
-                return self.children.pop(index)
-            except ValueError:
-                return None
 
     def set_children(self, new_children):
         assert(isinstance(new_children, list))
@@ -174,7 +180,7 @@ class Family(object):
         return returns
 
     def set_descs(self, new_descs):
-        assert(isinstance(new_descs, list))
+        assert(isinstance(new_descs, KeyValuePairList))
         for entry in new_descs:
             assert(isinstance(entry, KeyValuePair))
         self.descs = new_descs

@@ -1,18 +1,23 @@
-from uchicagoldr.keyvaluepairlist import KeyValuePairList
-
-
 class KeyValuePair(object):
 
     def __init__(self, key, value=""):
-        assert(isinstance(key, str))
-        assert(isinstance(value, str) or
-               isinstance(value, int) or
-               isinstance(value, float) or
-               isinstance(value, complex) or
-               isinstance(value, KeyValuePairList)
-               )
+        from uchicagoldr.keyvaluepairlist import KeyValuePairList
+
+        if not isinstance(key, str):
+            raise TypeError
+        if isinstance(value, str) or \
+                isinstance(value, int) or \
+                isinstance(value, float) or \
+                isinstance(value, complex) or \
+                isinstance(value, KeyValuePairList):
+            pass
+        else:
+            raise TypeError
+
         if isinstance(value, KeyValuePairList):
             self.nested = True
+        else:
+            self.nested = False
         self.key = key
         self.value = value
         self.objHash = (hash(key) << 1) ^ hash(value)
@@ -24,6 +29,9 @@ class KeyValuePair(object):
         return self.objHash
 
     def __repr__(self):
+        return "[ {} : {} ]".format(self.key, self.value)
+
+    def __str__(self):
         return "[ {} : {} ]".format(self.key, self.value)
 
     def get_key(self):

@@ -4,8 +4,17 @@ from uchicagoldr.keyvaluepair import KeyValuePair
 
 
 class KeyValuePairList(MutableSequence):
-    def __init__(self):
+    def __init__(self,init_list=[]):
         self.innerList = []
+        for entry in init_list:
+            if not isinstance(entry, KeyValuePair):
+                raise TypeError
+            else:
+                self.innerList.append(entry)
+
+    def __iter__(self):
+        for entry in self.innerList:
+            yield entry
 
     def __getitem__(self, index):
         try:
