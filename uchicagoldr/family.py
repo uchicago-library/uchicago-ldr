@@ -17,6 +17,7 @@ class Family(object):
 
         self.children = []
         self.descs = []
+        self.uuid = ""
 
         if isinstance(children, list) or children is None:
             pass
@@ -43,37 +44,6 @@ class Family(object):
                                                           str(self.descs)
                                                           )
 
-    def add_child(self, child, index=None):
-        assert(isinstance(child, Family) or
-               isinstance(child, FilePointer))
-        for cur_child in self.get_children():
-            if child is cur_child:
-                raise ValueError
-
-        if index is None:
-            self.children.append(child)
-        else:
-            assert(isinstance(index, int))
-            assert(index > -1 and index < len(self.children))
-            self.children.insert(index, child)
-        if not self._check_recursion():
-            raise RecursionError
-
-    def remove_child(self, child=None, index=None):
-        assert(child is not None or index is not None)
-        assert(bool(child) + bool(index) == 1)  # xor
-        assert(not (child and index))
-        if child is not None:
-            try:
-                return self.children.pop(self.children.index(child))
-            except ValueError:
-                return None
-        if index is not None:
-            try:
-                return self.children.pop(index)
-            except ValueError:
-                return None
-
     def __str__(self, depth=0):
         strRep = "UUID: {}\n".format(self.uuid)
         strRep = strRep+"\t"*depth+"Descs: "+str(len(self.get_descs()))
@@ -96,20 +66,6 @@ class Family(object):
     def __iter__(self):
         for child in self.children:
             yield child
-
-    def _remove_desc_by_key(self, key_to_del):
-        returns = []
-        for desc in self.descs:
-            if desc.get_key() == key_to_del:
-                returns.append(self.descs.pop(self.descs.index(desc)))
-        return returns
-
-    def _remove_desc_by_value(self, value_to_del):
-        returns = []
-        for desc in self.descs:
-            if desc.get_value() == value_to_del:
-                returns.append(self.descs.pop(self.descs.index(desc)))
-        return returns
 
     def _key_conflict(self, new_key):
         for entry in self.descs:
@@ -141,32 +97,50 @@ class Family(object):
         for child in self.get_children():
             return child._check_recursion(seen=seen)
 
+    def get_uuid(self):
+        return self.uuid
+
+    def add_child(self, child, index=None):
+        assert(isinstance(child, Family) or
+               isinstance(child, FilePointer))
+        for cur_child in self.get_children():
+            if child is cur_child:
+                raise ValueError
+
+        if index is None:
+            self.children.append(child)
+        else:
+            assert(isinstance(index, int))
+            assert(index > -1 and index < len(self.children))
+            self.children.insert(index, child)
+        if not self._check_recursion():
+            raise RecursionError
+
+    def remove_child_by_index(self, index):
+        return self.get_children().pop(index)
+
+    def remove_child(self, child):
+        return self.remove_child_by_index(self.get_children().index(child))
+
+    def get_child(self, child):
+        return self.get_children()[self.get_children().index(child)]
+
+    def get_child_by_index(self, index):
+        return self.get_children()[index]
+
     def set_children(self, new_children):
         assert(isinstance(new_children, list))
+        self.children = []
         for entry in new_children:
             assert(
                 isinstance(entry, Family) or
                 isinstance(entry, FilePointer)
             )
-        self.children = new_children
+            self.children.append(entry)
         assert(self._check_recursion())
 
     def get_children(self):
         return self.children
-
-    def get_child(self, child=None, index=None):
-        assert(child is not None or index is not None)
-        assert(not (child and index))
-        if child is not None:
-            try:
-                return self.children[self.children.index(child)]
-            except ValueError:
-                return None
-        if index is not None:
-            try:
-                return self.children[index]
-            except ValueError:
-                return None
 
     def add_desc(self, keyValuePair, index=None):
         assert(isinstance(keyValuePair, KeyValuePair))
@@ -179,68 +153,59 @@ class Family(object):
             assert(index > -1 and index < len(self.descs))
             self.descs.insert(index, keyValuePair)
 
-    def remove_desc(self, key_to_del=None, value_to_del=None, index=None):
-        assert(bool(key_to_del) + bool(value_to_del) + bool(index) == 1)  # xor
+    def remove_desc_by_index(self, index_to_del):
+        return self.get_descs().pop(index_to_del)
+
+    def remove_desc_by_key(self, key_to_del):
         returns = []
-        if key_to_del is not None:
-            returns.append(self._remove_desc_by_key(key_to_del))
-        if value_to_del is not None:
-            returns.append(self._remove_desc_by_value(value_to_del))
-        if index is not None:
-            try:
-                assert(isinstance(index, int))
-                returns.append(self.descs.pop(index))
-            except:
-                pass
+        for desc in self.descs:
+            if desc.get_key() == key_to_del:
+                returns.append(self.descs.pop(self.descs.index(desc)))
         return returns
 
-    def set_descs(self, new_descs):
-        assert(isinstance(new_descs, KeyValuePairList))
-        for entry in new_descs:
-            assert(isinstance(entry, KeyValuePair))
-        self.descs = new_descs
+    def remove_desc_by_value(self, value_to_del):
+        returns = []
+        for desc in self.descs:
+            if desc.get_value() == value_to_del:
+                returns.append(self.descs.pop(self.descs.index(desc)))
+        return returns
 
     def get_descs(self):
         return self.descs
 
-    def get_desc(self, key=None, value=None, index=None):
-        returns = self.get_desc_or(key=key, value=value, index=index)
-        return returns
-
-    def get_desc_or(self, key=None, value=None, index=None):
+    def get_desc_by_key(self, key):
         returns = []
-        cur_index = -1
-        for desc in self.descs:
-            cur_index += 1
-            if desc.get_key() == key or \
-                    desc.get_value() == value or \
-                    cur_index == index:
+        for desc in self.get_descs():
+            if desc.get_key() == key:
                 returns.append(desc)
         return returns
 
-    def get_desc_and(self, key=None, value=None, index=None):
+    def get_desc_by_value(self, value):
         returns = []
-        cur_index = -1
-        for desc in self.descs:
-            cur_index += 1
-            match = 0
-            if key is not None and key == desc.get_key():
-                match += 1
-            if value is not None and value == desc.get_value():
-                match += 1
-            if index is not None and cur_index == index:
-                match += 1
-            if match == 3:
+        for desc in self.get_descs():
+            if desc.get_value() == value:
                 returns.append(desc)
         return returns
+
+    def get_desc_by_index(self, index):
+        return self.get_descs()[index]
+
+    def set_descs(self, new_descs):
+        if not isinstance(new_descs, KeyValuePairList):
+            raise TypeError
+        for entry in new_descs:
+            if not isinstance(entry, KeyValuePair):
+                raise TypeError
+        self.descs = new_descs
 
     def write(self, path=getcwd(), file_name=None, clobber=False):
         if file_name is None:
-            file_name = str(hash(self))+'.family'
+            file_name = self.get_uuid() + '.family'
         assert(isinstance(path, str))
         assert(isinstance(file_name, str))
         assert(isinstance(clobber, bool))
         assert(isdir(path))
         if clobber is False:
             assert(not exists(join(path, file_name)))
-        dump(self, open(join(path, file_name), 'wb'))
+        with open(join(path, file_name), 'wb') as f:
+            dump(self, f)
