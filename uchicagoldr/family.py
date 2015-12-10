@@ -18,15 +18,24 @@ class Family(object):
         self.children = []
         self.descs = []
 
-        assert(isinstance(children, list) or children is None)
-        assert(isinstance(descs, KeyValuePairList) or descs is None)
+        if isinstance(children, list) or children is None:
+            pass
+        else:
+            raise TypeError
+        if isinstance(descs, KeyValuePairList) or descs is None:
+            pass
+        else:
+            raise TypeError
+
+        self.uuid = str(uuid4())
+
         if children is not None:
             for child in children:
                 self.add_child(child)
+
         if descs is not None:
             for desc in descs:
                 self.add_desc(desc)
-        self.uuid = str(uuid4())
 
     def __repr__(self):
         return "UUID: {}\nChildren: {}\nDescs: {}".format(self.uuid,
@@ -38,7 +47,8 @@ class Family(object):
         assert(isinstance(child, Family) or
                isinstance(child, FilePointer))
         for cur_child in self.get_children():
-            assert(child is not cur_child)
+            if child is cur_child:
+                raise ValueError
 
         if index is None:
             self.children.append(child)
@@ -46,6 +56,8 @@ class Family(object):
             assert(isinstance(index, int))
             assert(index > -1 and index < len(self.children))
             self.children.insert(index, child)
+        if not self._check_recursion():
+            raise RecursionError
 
     def remove_child(self, child=None, index=None):
         assert(child is not None or index is not None)
@@ -114,17 +126,20 @@ class Family(object):
             if isinstance(child, Family):
                 return self._uniq_child(new_child)
 
-    def _check_recursion(self, seen=[]):
+    def _check_recursion(self, seen=None):
+        if seen is None:
+            seen = []
+
         if self in seen:
             return False
+
         if isinstance(self, FilePointer):
-            return
-        if len(self.children) == 0:
-            return
+            return True
+        if len(self.get_children()) == 0:
+            return True
         seen.append(self)
-        for child in self.children:
-            child._check_recursion(seen=seen)
-        return True
+        for child in self.get_children():
+            return child._check_recursion(seen=seen)
 
     def set_children(self, new_children):
         assert(isinstance(new_children, list))
