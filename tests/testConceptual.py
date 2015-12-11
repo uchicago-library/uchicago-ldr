@@ -124,16 +124,27 @@ class testKeyValuePairList(unittest.TestCase):
 
 class testFamily(unittest.TestCase):
     def setUp(self):
+        self.families = []
         self.family10 = Family(descs=KVPList([KVP('10', '10')]))
+        self.families.append(self.family10)
         self.family9 = Family(descs=KVPList([KVP('9', '9')]))
+        self.families.append(self.family9)
         self.family8 = Family(descs=KVPList([KVP('8', '8')]))
+        self.families.append(self.family8)
         self.family7 = Family(descs=KVPList([KVP('7', '7')]))
+        self.families.append(self.family7)
         self.family6 = Family(descs=KVPList([KVP('6', '6')]))
+        self.families.append(self.family6)
         self.family5 = Family(descs=KVPList([KVP('5', '5')]))
+        self.families.append(self.family5)
         self.family4 = Family(descs=KVPList([KVP('4', '4')]))
+        self.families.append(self.family4)
         self.family3 = Family(descs=KVPList([KVP('3', '3')]))
+        self.families.append(self.family3)
         self.family2 = Family(descs=KVPList([KVP('2', '2')]))
+        self.families.append(self.family2)
         self.family1 = Family(descs=KVPList([KVP('1', '1')]))
+        self.families.append(self.family1)
 
     def tearDown(self):
         del self.family1
@@ -146,6 +157,7 @@ class testFamily(unittest.TestCase):
         del self.family8
         del self.family9
         del self.family10
+        del self.families
 
     def testMint(self):
         test = Family()
@@ -371,12 +383,43 @@ class testFamily(unittest.TestCase):
         self.family4.add_child(self.family10)
 
         self.family1.flatten()
-        self.assertEqual(self.family1.get_children(),[self.family2.get_uuid(), self.family3.get_uuid(), self.family4.get_uuid()])
+        self.assertEqual(self.family1.get_children(),
+                         [self.family2.get_uuid(), self.family3.get_uuid(),
+                          self.family4.get_uuid()])
 
+#    def testFamilyWriteToDir(self):
+#        from os.path import isfile, join
+#        from os import getcwd, remove
+#        self.family1.add_child(self.family2)
+#        self.family1.add_child(self.family3)
+#        self.family1.add_child(self.family4)
+#        self.family2.add_child(self.family5)
+#        self.family2.add_child(self.family6)
+#        self.family3.add_child(self.family7)
+#        self.family3.add_child(self.family8)
+#        self.family4.add_child(self.family9)
+#        self.family4.add_child(self.family10)
+#        self.family1.write_to_dir()
+#        self.filenames = [x.get_uuid() for x in self.families]
+#        # This should be made recursive in the future.
+#        # The test struct is only 2 deep
+#        for x in [self.filenames[9]]:
+#            self.assertTrue(isfile(join(getcwd(), "0_"+x+'.family')))
+#            remove(join(getcwd(),"0_"+x+'.family'))
+#        for x in [self.filenames[8], self.filenames[7], self.filenames[6]]:
+#            self.assertTrue(isfile(join(getcwd(), "1_"+x+'.family')))
+#            remove(join(getcwd(),"1_"+x+'.family'))
+#        for x in [self.filenames[5], self.filenames[4], self.filenames[3],
+#                  self.filenames[2], self.filenames[1], self.filenames[0]]:
+#            self.assertTrue(isfile(join(getcwd(), "2_"+x+'.family')))
+#            remove(join(getcwd(),"2_"+x+'.family'))
+
+    def testFamilyWriteToDB(self):
+        pass
 
     def testFamilyWriteToDir(self):
         from os.path import isfile, join
-        from os import getcwd
+        from os import getcwd, remove
         self.family1.add_child(self.family2)
         self.family1.add_child(self.family3)
         self.family1.add_child(self.family4)
@@ -387,18 +430,48 @@ class testFamily(unittest.TestCase):
         self.family4.add_child(self.family9)
         self.family4.add_child(self.family10)
         self.family1.write_to_dir()
-        # This should be made recursive in the future. The test struct is only 2 deep
-        self.assertTrue(isfile(join(getcwd(), "0_"+self.family1.get_uuid()+'.family')))
-        for child in self.family1.get_children():
-            self.assertTrue(isfile(join(getcwd(), "1_"+child.get_uuid()+'.family')))
-            for grandchild in child:
-                self.assertTrue(isfile(join(getcwd(), "2_"+grandchild.get_uuid()+'.family')))
-
-    def testFamilyWriteToDB(self):
-        pass
+        self.filenames = [x.get_uuid() for x in self.families]
+        # This should be made recursive in the future.
+        # The test struct is only 2 deep
+        for x in [self.filenames[9]]:
+            self.assertTrue(isfile(join(getcwd(), x+'.family')))
+            remove(join(getcwd(), x+'.family'))
+        for x in [self.filenames[8], self.filenames[7], self.filenames[6]]:
+            self.assertTrue(isfile(join(getcwd(), x+'.family')))
+            remove(join(getcwd(), x+'.family'))
+        for x in [self.filenames[5], self.filenames[4], self.filenames[3],
+                  self.filenames[2], self.filenames[1], self.filenames[0]]:
+            self.assertTrue(isfile(join(getcwd(), x+'.family')))
+            remove(join(getcwd(), x+'.family'))
 
     def testFamilyPoofFromDir(self):
-        pass
+        from os import remove, getcwd
+        from os.path import join
+        from copy import deepcopy
+
+        self.family1.add_child(self.family2)
+        self.family1.add_child(self.family3)
+        self.family1.add_child(self.family4)
+        self.family2.add_child(self.family5)
+        self.family2.add_child(self.family6)
+        self.family3.add_child(self.family7)
+        self.family3.add_child(self.family8)
+        self.family4.add_child(self.family9)
+        self.family4.add_child(self.family10)
+
+        self.family1_bak = deepcopy(self.family1)
+
+        self.family1.write_to_dir()
+        self.filenames = [x.get_uuid() for x in self.families]
+
+        self.assertTrue(self.family1._get_flat())
+
+        self.family1.poof_from_dir()
+
+        self.assertEqual(self.family1, self.family1_bak)
+
+        for x in self.families:
+            remove(join(getcwd(), x.get_uuid()+'.family'))
 
     def testFamilyPoofFromDB(self):
         pass

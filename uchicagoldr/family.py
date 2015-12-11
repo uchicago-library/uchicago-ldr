@@ -1,6 +1,6 @@
-from pickle import dump
+from pickle import dump, load
 from os import getcwd
-from os.path import exists, isdir, join
+from os.path import exists, isdir, join, isfile
 from uuid import uuid4
 
 from uchicagoldr.filepointer import FilePointer
@@ -53,15 +53,15 @@ class Family(object):
                                                           str(self.descs)
                                                           )
 
-    def __str__(self, depth=0):
+    def __str__(self, _depth=0):
         strRep = "UUID: {}\n".format(self.uuid)
-        strRep = strRep+"\t"*depth+"Descs: "+str(len(self.get_descs()))
+        strRep = strRep+"\t"*_depth+"Descs: "+str(len(self.get_descs()))
         for desc in self.get_descs():
-            strRep = strRep+'\n'+'\t'*depth+" "+desc.__str__()
-        strRep = strRep+"\n"+"\t"*depth+"Children: " + \
+            strRep = strRep+'\n'+'\t'*_depth+" "+desc.__str__()
+        strRep = strRep+"\n"+"\t"*_depth+"Children: " + \
                                         str(len(self.get_children()))
         for child in self.get_children():
-            strRep = strRep+'\n'+"\t"*(depth+1)+child.__str__(depth=depth+1)
+            strRep = strRep+'\n'+"\t"*(_depth+1)+child.__str__(_depth=_depth+1)
         if len(self.get_children()) == 0:
             strRep += '\n'
         return strRep
@@ -246,18 +246,80 @@ class Family(object):
         if return_refs:
             return refs
 
-    def poof_from_dir(self):
-        pass
+#    def poof_from_dir(self, path=getcwd(), _depth=0):
+#        assert(self._get_flat())
+#
+#        if len(self.get_children()) > 0:
+#            poofed_children=[]
+#            for child in self.get_children():
+#                with open(str(_depth+1)+"_"+child+'.family', 'rb') as f:
+#                    poofed_children.append(load(f))
+#            self.children = poofed_children
+#            for child in self.get_children():
+#                child.poof_from_dir(path=path, _depth=_depth+1)
+#
+    def poof_from_dir(self, path=getcwd()):
+        assert(self._get_flat())
+
+        if len(self.get_children()) > 0:
+            poofed_children=[]
+            for child in self.get_children():
+                with open(child+'.family', 'rb') as f:
+                    poofed_children.append(load(f))
+            self.children = poofed_children
+            for child in self.get_children():
+                child.poof_from_dir(path=path)
 
     def poof_from_db(self):
         pass
 
-    def write_to_dir(self, path=getcwd(), clobber=False, depth=0):
+#    def write_to_dir(self, path=getcwd(), clobber=False, _depth=0):
+#        from os.path import isdir
+#        assert(isdir(path))
+#
+#        leaf = False
+#        if len(self.get_children()) == 0:
+#            leaf = True
+#
+#        if self._get_flat():
+#            leaf = True
+#
+#        if not leaf:
+#            allChildrenFlat = True
+#            for child in self.get_children():
+#                flat = child._get_flat()
+#                allChildrenFlat = allChildrenFlat and flat
+#                if not flat:
+#                    break
+#            leaf = allChildrenFlat
+#
+#        if not leaf:
+#            allFilePointers = True
+#            for child in self.get_children():
+#                if not isinstance(child, FilePointer):
+#                    allFilePointers = False
+#                    break
+#            if allFilePointers:
+#                leaf = True
+#
+#        if leaf:
+#            self.flatten()
+#            self.write_to_file(file_name=str(_depth)+"_"+self.get_uuid()+'.family', path=path, clobber=clobber)
+#
+#        else:
+#            for child in self.get_children():
+#                child.write_to_dir(path=path, clobber=clobber, _depth=_depth+1)
+#            self.write_to_dir(path=path, clobber=clobber, _depth=_depth)
+
+    def write_to_dir(self, path=getcwd(), clobber=False):
         from os.path import isdir
         assert(isdir(path))
 
         leaf = False
         if len(self.get_children()) == 0:
+            leaf = True
+
+        if self._get_flat():
             leaf = True
 
         if not leaf:
@@ -280,12 +342,12 @@ class Family(object):
 
         if leaf:
             self.flatten()
-            self.write_to_file(file_name=str(depth)+"_"+self.get_uuid()+'.family', path=path, clobber=clobber)
+            self.write_to_file(file_name=self.get_uuid()+'.family', path=path, clobber=clobber)
 
         else:
             for child in self.get_children():
-                child.write_to_dir(path=path, clobber=clobber, depth=depth+1)
-            self.write_to_file(file_name=str(depth)+"_"+self.get_uuid()+'.family', path=path, clobber=clobber)
+                child.write_to_dir(path=path, clobber=clobber)
+            self.write_to_dir(path=path, clobber=clobber)
 
     def write_to_file(self, path=getcwd(), file_name=None, clobber=False):
         if file_name is None:
