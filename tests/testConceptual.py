@@ -2,6 +2,7 @@ import unittest
 from uchicagoldr.keyvaluepair import KeyValuePair as KVP
 from uchicagoldr.keyvaluepairlist import KeyValuePairList as KVPList
 from uchicagoldr.family import Family
+from uchicagoldr.filepointer import FilePointer
 
 
 class TestKeyValuePair(unittest.TestCase):
@@ -146,6 +147,28 @@ class testFamily(unittest.TestCase):
         self.family1 = Family(descs=KVPList([KVP('1', '1')]))
         self.families.append(self.family1)
 
+        self.filePointers = []
+        self.filePointer1 = FilePointer('1')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer2 = FilePointer('2')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer3 = FilePointer('3')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer4 = FilePointer('4')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer5 = FilePointer('5')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer6 = FilePointer('6')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer7 = FilePointer('7')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer8 = FilePointer('8')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer9 = FilePointer('9')
+        self.filePointers.append(self.filePointer1)
+        self.filePointer10 = FilePointer('10')
+        self.filePointers.append(self.filePointer1)
+
     def tearDown(self):
         del self.family1
         del self.family2
@@ -178,32 +201,32 @@ class testFamily(unittest.TestCase):
             self.assertTrue(family == tests[0])
 
     def testInitChildrenAndDescs(self):
-        self.family10 = Family(descs=KVPList([KVP('10', '10')]))
-        self.family9 = Family(descs=KVPList([KVP('9', '9')]))
-        self.family8 = Family(descs=KVPList([KVP('8', '8')]))
-        self.family7 = Family(descs=KVPList([KVP('7', '7')]))
-        self.family6 = Family(descs=KVPList([KVP('6', '6')]))
-        self.family5 = Family(descs=KVPList([KVP('5', '5')]))
+        self.family10 = Family(descs=KVPList([KVP('10', '10')]),children=[self.filePointer1])
+        self.family9 = Family(descs=KVPList([KVP('9', '9')]),children=[self.filePointer2])
+        self.family8 = Family(descs=KVPList([KVP('8', '8')]),children=[self.filePointer3])
+        self.family7 = Family(descs=KVPList([KVP('7', '7')]),children=[self.filePointer4])
+        self.family6 = Family(descs=KVPList([KVP('6', '6')]),children=[self.filePointer5])
+        self.family5 = Family(descs=KVPList([KVP('5', '5')]),children=[self.filePointer6])
         self.family4 = Family(descs=KVPList([KVP('4', '4')]),
-                              children=[self.family9, self.family10])
+                              children=[self.family9, self.family10, self.filePointer7])
         self.family3 = Family(descs=KVPList([KVP('3', '3')]),
-                              children=[self.family7, self.family8])
+                              children=[self.family7, self.family8, self.filePointer8])
         self.family2 = Family(descs=KVPList([KVP('2', '2')]),
-                              children=[self.family5, self.family6])
+                              children=[self.family5, self.family6, self.filePointer9])
         self.family1 = Family(descs=KVPList([KVP('1', '1')]),
                               children=[self.family2, self.family3,
-                                        self.family4])
+                                        self.family4, self.filePointer10])
 
-        self.assertEqual(len(self.family1.children), 3)
-        self.assertEqual(len(self.family2.children), 2)
-        self.assertEqual(len(self.family3.children), 2)
-        self.assertEqual(len(self.family4.children), 2)
-        self.assertEqual(len(self.family5.children), 0)
-        self.assertEqual(len(self.family6.children), 0)
-        self.assertEqual(len(self.family7.children), 0)
-        self.assertEqual(len(self.family8.children), 0)
-        self.assertEqual(len(self.family9.children), 0)
-        self.assertEqual(len(self.family10.children), 0)
+        self.assertEqual(len(self.family1.children), 4)
+        self.assertEqual(len(self.family2.children), 3)
+        self.assertEqual(len(self.family3.children), 3)
+        self.assertEqual(len(self.family4.children), 3)
+        self.assertEqual(len(self.family5.children), 1)
+        self.assertEqual(len(self.family6.children), 1)
+        self.assertEqual(len(self.family7.children), 1)
+        self.assertEqual(len(self.family8.children), 1)
+        self.assertEqual(len(self.family9.children), 1)
+        self.assertEqual(len(self.family10.children), 1)
 
     def testAddChild(self):
         self.family1.add_child(self.family2)
