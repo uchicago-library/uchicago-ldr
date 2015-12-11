@@ -8,6 +8,14 @@ from uchicagoldr.keyvaluepair import KeyValuePair
 from uchicagoldr.keyvaluepairlist import KeyValuePairList
 
 
+def load_family_from_dir(dir, uuid):
+    pass
+
+
+def load_family_from_db(uuid):
+    pass
+
+
 class Family(object):
 
     # For pickling... #.#.# = incompat.not_a_good_idea.minor_upgrade
@@ -18,6 +26,7 @@ class Family(object):
         self.children = []
         self.descs = []
         self.uuid = ""
+        self.flat = False
 
         if isinstance(children, list) or children is None:
             pass
@@ -59,8 +68,13 @@ class Family(object):
 
     def __eq__(self, other):
         eq = isinstance(other, Family)
-        eq = eq and self.get_children() == other.get_children()
-        eq = eq and self.get_descs() == other.get_descs()
+        if eq is True:
+            eq = eq and self.get_descs() == other.get_descs()
+        if eq is True:
+            eq = eq and self.get_children() == other.get_children()
+        if eq is True:
+            for i in range(len(self.get_children())):
+                eq = eq and (self.get_children()[i] == other.get_children()[i])
         return eq
 
     def __iter__(self):
@@ -97,6 +111,27 @@ class Family(object):
         for child in self.get_children():
             return child._check_recursion(seen=seen)
 
+    def _set_flat(self, new_flat):
+        assert(isinstance(new_flat, bool))
+        self.flat = new_flat
+
+    def _get_flat(self):
+        return self.flat
+
+    def _toggle_flat(self):
+        if self._get_flat() == True:
+            self._set_flat(False)
+        else:
+            self._set_flat(True)
+        return self._get_flat()
+
+    def check_not_flat(self):
+        if self._get_flat() == True:
+            raise RuntimeError
+
+    def check_flat(self):
+        if self._get_flat() == False:
+            raise RuntimeError
     def get_uuid(self):
         return self.uuid
 
@@ -198,7 +233,61 @@ class Family(object):
                 raise TypeError
         self.descs = new_descs
 
-    def write(self, path=getcwd(), file_name=None, clobber=False):
+    def flatten(self, return_refs=False):
+        flatChildArray = []
+        if return_refs:
+            refs = []
+        for child in self.get_children():
+            flatChildArray.append(child.get_uuid())
+            if return_refs:
+                refs.append(child)
+        self.children = flatChildArray
+        self._toggle_flat()
+        if return_refs:
+            return refs
+
+    def poof_from_dir(self):
+        pass
+
+    def poof_from_db(self):
+        pass
+
+    def write_to_dir(self, path=getcwd(), clobber=False, depth=0):
+        from os.path import isdir
+        assert(isdir(path))
+
+        leaf = False
+        if len(self.get_children()) == 0:
+            leaf = True
+
+        if not leaf:
+            allChildrenFlat = True
+            for child in self.get_children():
+                flat = child._get_flat()
+                allChildrenFlat = allChildrenFlat and flat
+                if not flat:
+                    break
+            leaf = allChildrenFlat
+
+        if not leaf:
+            allFilePointers = True
+            for child in self.get_children():
+                if not isinstance(child, FilePointer):
+                    allFilePointers = False
+                    break
+            if allFilePointers:
+                leaf = True
+
+        if leaf:
+            self.flatten()
+            self.write_to_file(file_name=str(depth)+"_"+self.get_uuid()+'.family', path=path, clobber=clobber)
+
+        else:
+            for child in self.get_children():
+                child.write_to_dir(path=path, clobber=clobber, depth=depth+1)
+            self.write_to_file(file_name=str(depth)+"_"+self.get_uuid()+'.family', path=path, clobber=clobber)
+
+    def write_to_file(self, path=getcwd(), file_name=None, clobber=False):
         if file_name is None:
             file_name = self.get_uuid() + '.family'
         assert(isinstance(path, str))
@@ -209,3 +298,6 @@ class Family(object):
             assert(not exists(join(path, file_name)))
         with open(join(path, file_name), 'wb') as f:
             dump(self, f)
+
+    def write_to_db(self):
+        pass

@@ -337,27 +337,71 @@ class testFamily(unittest.TestCase):
         self.assertTrue(self.family1.__repr__())
         self.assertTrue(self.family1.__str__())
 
-    def testFamilyWriteToDisk(self):
+    def testFamilyRawWriteToDisk(self):
         from os import getcwd, remove
         from os.path import join, exists
 
-        self.family1.write()
+        self.family1.write_to_file()
 
         self.assertTrue(exists(
             join(getcwd(), self.family1.get_uuid()+'.family')))
         remove(join(getcwd(), self.family1.get_uuid()+'.family'))
 
-    def testFamilyReadFromDisk(self):
+    def testFamilyRawReadFromDisk(self):
         from os import getcwd, remove
         from os.path import join
         from pickle import load
 
         self.family1 = Family(descs=KVPList([KVP('writetest', 'writetest')]))
-        self.family1.write()
+        self.family1.write_to_file()
         with open(join(getcwd(), self.family1.get_uuid()+'.family'), 'rb') as f:
             self.family_comp = load(f)
         self.assertTrue(self.family1 == self.family_comp)
         remove(join(getcwd(), self.family1.get_uuid()+'.family'))
+
+    def testFamilyFlatten(self):
+        self.family1.add_child(self.family2)
+        self.family1.add_child(self.family3)
+        self.family1.add_child(self.family4)
+        self.family2.add_child(self.family5)
+        self.family2.add_child(self.family6)
+        self.family3.add_child(self.family7)
+        self.family3.add_child(self.family8)
+        self.family4.add_child(self.family9)
+        self.family4.add_child(self.family10)
+
+        self.family1.flatten()
+        self.assertEqual(self.family1.get_children(),[self.family2.get_uuid(), self.family3.get_uuid(), self.family4.get_uuid()])
+
+
+    def testFamilyWriteToDir(self):
+        from os.path import isfile, join
+        from os import getcwd
+        self.family1.add_child(self.family2)
+        self.family1.add_child(self.family3)
+        self.family1.add_child(self.family4)
+        self.family2.add_child(self.family5)
+        self.family2.add_child(self.family6)
+        self.family3.add_child(self.family7)
+        self.family3.add_child(self.family8)
+        self.family4.add_child(self.family9)
+        self.family4.add_child(self.family10)
+        self.family1.write_to_dir()
+        # This should be made recursive in the future. The test struct is only 2 deep
+        self.assertTrue(isfile(join(getcwd(), "0_"+self.family1.get_uuid()+'.family')))
+        for child in self.family1.get_children():
+            self.assertTrue(isfile(join(getcwd(), "1_"+child.get_uuid()+'.family')))
+            for grandchild in child:
+                self.assertTrue(isfile(join(getcwd(), "2_"+grandchild.get_uuid()+'.family')))
+
+    def testFamilyWriteToDB(self):
+        pass
+
+    def testFamilyPoofFromDir(self):
+        pass
+
+    def testFamilyPoofFromDB(self):
+        pass
 
 if __name__ == '__main__':
     unittest.main()
