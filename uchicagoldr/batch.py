@@ -1,12 +1,13 @@
 
 from collections import Iterable
-from os import access, listdir, rmdir, R_OK
+from os import listdir, rmdir
 from os.path import exists, join, isabs, isfile, isdir, relpath
 from sqlalchemy.orm.query import Query
 from types import GeneratorType
+from urllib.request import urlopen
 
-from uchicagoldr.database import Database
 from uchicagoldr.item import Item
+
 
 class Batch(object):
     """
@@ -18,9 +19,10 @@ class Batch(object):
     root = ""
     identifier = ""
 
-    def __init__(self, root, directory = None,
-                 query = None):
-        assert exists(root)        
+    def __init__(self, root,
+                 directory=None,
+                 query=None):
+        assert exists(root)
         if query:
             assert isinstance(query, Query)
             self.query = query
@@ -36,35 +38,34 @@ class Batch(object):
 
     def add_item(self,new_item):
         try:
-            assert isinstance(new_item,Item)
+            assert isinstance(new_item, Item)
             self.items.append(new_item)
-            return (True,None)
+            return (True, None)
         except Exception as e:
-            return (False,e)
+            return (False, e)
 
     def find_batch_identifier(self):
-        url_request = urlopen("https://y1.lib.uchicago.edu/cgi-bin/minter/" + \
-                              "noid?action=minter&n=1")
+        url_data = urlopen("https://y1.lib.uchicago.edu/cgi-bin/minter/" +
+                           "noid?action=minter&n=1")
         if url_data.status == 200:
-            url_data = url_request.read()
+            url_data = url_data.read()
         else:
-            raise ValueError("Could not fetch batch identifier from " + \
+            raise ValueError("Could not fetch batch identifier from " +
                              "RESTful NOID minter")
         return url_data.split('61001/').rstrip()
-        
-        
-    def find_items(self, from_db = False, from_directory = False):
+
+    def find_items(self, from_db=False, from_directory=False):
         output = None
         if from_directory:
             if exists(self.directory_path):
                 output = self.walk_directory_picking_files(self.directory_path)
         elif from_db:
             output = self.walk_database_query_picking_files()
-            
+
         else:
             output = None
         return output
-            
+
     def walk_directory_picking_files(self, directory):
         """
         walks a directory tree and creates a generator full of Item instances
@@ -72,27 +73,34 @@ class Batch(object):
         """
         flat_list = listdir(self.directory_path)
         while flat_list:
-            node=flat_list.pop()
-            fullpath=join(directory,node)
+            node = flat_list.pop()
+            fullpath = join(directory, node)
             if isfile(fullpath):
-                i=Item(fullpath,self.root)
+                i = Item(fullpath, self.root)
                 yield i
             elif isdir(fullpath):
                 for child in listdir(fullpath):
-                    flat_list.append(join(fullpath,child))
+                    flat_list.append(join(fullpath, child))
 
     def walk_database_query_picking_files(self):
         for n in self.query:
             item = Item(join(self.root, n.accession, n.filepath), self.root)
-            if getattr(n,'checksum',None):
+            if getattr(n, 'checksum', None):
                 item.remote_hash = n.checksum
-            if getattr(n,'size',None):
+            if getattr(n, 'size', None):
                 item.remote_size = n.size
-            if getattr(n,'mimetype',None):
+            if getattr(n, 'mimetype', None):
                 item.remote_mimetype = n.mimetype
             yield item
-    
-    def set_items(self, generator_object):
+
+    def set_items(self, items):
+        assert(isinstance(items, GeneratorType) or isinstance(items, Iterable))
+        if isinstance(items, GeneratorType):
+            set_items_gen(self, items)
+        if isinstance(items, Iterable):
+            set_items_iter(self, items)
+
+    def set_items_gen(self, generator_object):
         assert isinstance(generator_object, GeneratorType)
         self.items = generator_object
 
@@ -134,26 +142,26 @@ class Batch(object):
         self.define_path(directory_path)
         self.set_root_path(root)
         directory_relative_to_root = self. \
-                                     convert_to_relative_path(directory_path) 
+                                     convert_to_relative_path(directory_path)
         self.get_accession_from_relative_path(directory_relative_to_root)
-        generator_of_items = self.walk_directory_picking_files( \
-                                                        self.directory_path \
+        generator_of_items = self.walk_directory_picking_files(
+                                                        self.directory_path
         )
         self.items = generator_of_items
-            
+
     def collect_from_database(self, database_object, queryable, query_object,
                               root):
         query = database_object.session.query(queryable).filter(query_object)
         if query.count() > 0:
-            generator_of_items = self.walk_database_query_picking_files( \
-                                                                query, \
+            generator_of_items = self.walk_database_query_picking_files(
+                                                                query,
                                                                 root,
             )
             self.items = generator_of_items
         else:
             raise ValueError("Your database query did not have any results!")
 
-    def set_items(self, some_iterable):
+    def set_items_iter(self, some_iterable):
         assert isinstance(some_iterable, Iterable)
         self.items = some_iterable
 

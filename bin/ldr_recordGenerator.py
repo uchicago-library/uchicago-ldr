@@ -1,43 +1,79 @@
+#!/usr/bin/python3
 
+# Default package imports begin #
+from argparse import ArgumentParser
+from os import _exit
+from os.path import split, exists, join, abspath, expandvars, isdir
+import json
+# Default package imports end #
+
+# Third party package imports begin #
+# Third party package imports end #
+
+# Local package imports begin #
+from uchicagoldrLogging.loggers import MasterLogger
+from uchicagoldrLogging.handlers import DefaultTermHandler, DebugTermHandler, \
+    DefaultFileHandler, DebugFileHandler, DefaultTermHandlerAtLevel,\
+    DefaultFileHandlerAtLevel
+from uchicagoldrLogging.filters import UserAndIPFilter
+
+from uchicagoldrRecords.record.recordFieldsBooleans import RecordFieldsBooleans
+from uchicagoldrRecords.record.recordFieldsValidation import \
+    RecordFieldsValidation
+from uchicagoldrRecords.record.recordFieldsDefaults import RecordFieldsDefaults
+from uchicagoldrRecords.fields.ldrFields import LDRFields
+from uchicagoldrRecords.readers.digitalAcquisitionRead import \
+    ReadAcquisitionRecord
+from uchicagoldrRecords.readers.dummyReader import DummyReader
+from uchicagoldrRecords.mappers.digitalAcquisitionMap import \
+    AcquisitionRecordMapping
+from uchicagoldrRecords.mappers.dummyMapper import DummyMapper
+from uchicagoldrRecords.record.recordWriting import instantiateRecord, \
+    meldRecord, manualInput, booleanLoop, validate, generateFileEntries, \
+    computeTotalFileSizeFromRecord, writeNoClobber, createSubRecord
+
+from uchicagoldrStaging.validation.validateBase import ValidateBase
+# Local package imports end #
+
+# Header info begins #
 __author__ = "Brian Balsamo"
 __copyright__ = "Copyright 2015, The University of Chicago"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 __maintainer__ = "Brian Balsamo"
 __email__ = "balsamo@uchicago.edu"
 __status__ = "Prototype"
+# Header info ends #
 
 """
-A module meant to ingest a digital acquisitions form and a staged directory and produce a record designed for use by Special Collections and the DAS.
+A module meant to ingest a digital acquisitions form and a staged directory
+and produce a record designed for use by Special Collections, the LDR,
+and the DAS.
 """
 
-from argparse import ArgumentParser
-from logging import DEBUG, FileHandler, Formatter, getLogger, \
-    INFO, StreamHandler
-from os import _exit,listdir
-from os.path import isdir,join,abspath,expandvars,split,exists
-import json
-from re import match
-from hashlib import sha256
+# Functions begin #
+# Functions end #
 
-from uchicagoldr.batch import Batch
-from uchicagoldr.item import Item
-
-from uchicagoldrRecords.record.recordFields import RecordFields
-from uchicagoldrRecords.record.recordFieldsBooleans import RecordFieldsBooleans
-from uchicagoldrRecords.record.recordFieldsValidation import RecordFieldsValidation
-from uchicagoldrRecords.record.recordFieldsDefaults import RecordFieldsDefaults
-from uchicagoldrRecords.fields.ldrFields import LDRFields
-from uchicagoldrRecords.readers.digitalAcquisitionRead import ReadAcquisitionRecord
-from uchicagoldrRecords.readers.dummyReader import DummyReader
-from uchicagoldrRecords.mappers.digitalAcquisitionMap import AcquisitionRecordMapping
-from uchicagoldrRecords.mappers.dummyMapper import DummyMapper
-from uchicagoldrRecords.record.recordWriting import instantiateRecord,meldRecord,manualInput,booleanLoop,validate,generateFileEntries,computeTotalFileSizeFromRecord,writeNoClobber,createSubRecord
 
 def main():
-    # start of parser boilerplate
-    parser = ArgumentParser(description=" A module meant to ingest a digital acquisitions form and a staged directory and produce a record designed for use by Special Collections and the DAS.",
-                            epilog="Copyright University of Chicago; " + \
-                            "written by "+__author__ + \
+    # Master log instantiation begins #
+    global masterLog
+    masterLog = MasterLogger()
+    # Master log instantiation ends #
+
+    # Application specific log instantation begins #
+    global logger
+    logger = masterLog.getChild(__name__)
+    f = UserAndIPFilter()
+    termHandler = DefaultTermHandler()
+    logger.addHandler(termHandler)
+    logger.addFilter(f)
+    logger.info("BEGINS")
+    # Application specific log instantation ends #
+
+    # Parser instantiation begins #
+    parser = ArgumentParser(description="[A brief description of the utility]",
+                            epilog="Copyright University of Chicago; " +
+                            "written by "+__author__ +
                             " "+__email__)
 
     parser.add_argument("-v", help="See the version of this program",
@@ -45,136 +81,183 @@ def main():
     # let the user decide the verbosity level of logging statements
     # -b sets it to INFO so warnings, errors and generic informative statements
     # will be logged
-    parser.add_argument( \
-                         '-b','-verbose',help="set verbose logging",
-                         action='store_const',dest='log_level',
-                         const=INFO,default='INFO' \
+    parser.add_argument(
+                        '-b', '--verbosity',
+                        help="set logging verbosity " +
+                        "(DEBUG,INFO,WARN,ERROR,CRITICAL)",
+                        nargs='?',
+                        const='INFO'
     )
     # -d is debugging so anything you want to use a debugger gets logged if you
     # use this level
-    parser.add_argument( \
-                         '-d','--debugging',help="set debugging logging",
-                         action='store_const',dest='log_level',
-                         const=DEBUG,default='INFO' \
+    parser.add_argument(
+                        '-d', '--debugging',
+                        help="set debugging logging",
+                        action='store_true'
     )
-    # optionally save the log to a file. set a location or use the default constant
-    parser.add_argument( \
-                         '-l','--log_loc',help="save logging to a file",
-                         dest="log_loc",
-                         \
-    )
-    parser.add_argument("--acquisition-record",'-a',action='append', help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
+    # optionally save the log to a file.
+    # Set a location or use the default constant
+    parser.add_argument(
+                        '-l', '--log_loc',
+                        help="save logging to a file",
+                        dest="log_loc",
+                        )
+    parser.add_argument(
+                        "item",
+                        help="Enter a noid for an accession or a " +
+                        "directory path that you need to validate against" +
                         " a type of controlled collection"
-    )
-    parser.add_argument("--out-file",'-o',help="The location where the full record should be written to disk.",required=True,action="append")
-    parser.add_argument("item", help="Enter a noid for an accession or a " + \
-                        "directory path that you need to validate against" + \
-                        " a type of controlled collection"
-    )
-    parser.add_argument("root",help="Enter the root of the directory path",
+                        )
+    parser.add_argument(
+                        "root",
+                        help="Enter the root of the directory path",
                         action="store"
-    )
-    args = parser.parse_args()
-    log_format = Formatter( \
-                            "[%(levelname)s] %(asctime)s  " + \
-                            "= %(message)s",
-                            datefmt="%Y-%m-%dT%H:%M:%S" \
-    )
-    global logger
-    logger = getLogger( \
-                        "lib.uchicago.repository.logger" \
-    )
-    ch = StreamHandler()
-    ch.setFormatter(log_format)
-    logger.setLevel(args.log_level)
-    if args.log_loc:
-        fh = FileHandler(args.log_loc)
-        fh.setFormatter(log_format)
-        logger.addHandler(fh)
-    logger.addHandler(ch)
+                        )
+    parser.add_argument(
+                        "--acquisition-record", '-a',
+                        help="Enter a noid for an accession or a " +
+                        "directory path that you need to validate against" +
+                        " a type of controlled collection",
+                        action='append'
+                        )
+    parser.add_argument(
+                        "--out-file", '-o',
+                        help="The location where the full record should be " +
+                        " written to disk.",
+                        required=True,
+                        action="append"
+                        )
     try:
-        print("BEGINNING")
-        #Keep in mind that population order here matters a lot in terms of how much input the user will be asked for.
+        args = parser.parse_args()
+    except SystemExit:
+        logger.critical("ENDS: Command line argument parsing failed.")
+        exit(1)
+    # Begin argument post processing, if required #
+    if args.verbosity and args.verbosity not in ['DEBUG', 'INFO',
+                                                 'WARN', 'ERROR', 'CRITICAL']:
+        logger.critical("You did not pass a valid argument to the verbosity \
+                        flag! Valid arguments include: \
+                        'DEBUG','INFO','WARN','ERROR', and 'CRITICAL'")
+        return(1)
+    if args.log_loc:
+        if not exists(split(args.log_loc)[0]):
+            logger.critical("The specified log location does not exist!")
+            return(1)
+    # End argument post processing #
 
-        #Instantiate a blank record with all our fields set to a blank string, for bounding loops and no funny business when we try and print it.
-        print("Instantiating Record")
-        record=instantiateRecord()
+    # Begin user specified log instantiation, if required #
+    if args.log_loc:
+        fileHandler = DefaultFileHandler(args.log_loc)
+        logger.addHandler(fileHandler)
 
-        #Map our defaults right into the record.
-        print("Mapping defaults")
-        meldRecord(record,RecordFieldsDefaults(),DummyReader,DummyMapper)
+    if args.verbosity:
+        logger.removeHandler(termHandler)
+        termHandler = DefaultTermHandlerAtLevel(args.verbosity)
+        logger.addHandler(termHandler)
+        if args.log_loc:
+            logger.removeHandler(fileHandler)
+            fileHandler = DefaultFileHandlerAtLevel(args.log_loc,
+                                                    args.verbosity)
+            logger.addHandler(fileHandler)
 
-        #Read all the digital acquisition forms, populate the record with their info, address conflicts
-        print("Reading and mapping digital acquisition records.")
+    if args.debugging:
+        logger.removeHandler(termHandler)
+        termHandler = DebugTermHandler()
+        logger.addHandler(termHandler)
+        if args.log_loc:
+            logger.removeHandler(fileHandler)
+            fileHandler = DebugFileHandler(args.log_loc)
+            logger.addHandler(fileHandler)
+    # End user specified log instantiation #
+    try:
+        # Begin module code #
+        # Keep in mind that population order here matters a lot in terms of
+        # how much input the user will be asked for.
+
+        # Instantiate a blank record with all our fields set to a blank string,
+        # for bounding loops and no funny business when we try and print it.
+        logger.info("Instantiating Record")
+        record = instantiateRecord()
+
+        # Map our defaults right into the record.
+        logger.info("Mapping defaults")
+        meldRecord(record, RecordFieldsDefaults(), DummyReader, DummyMapper)
+
+        # Read all the digital acquisition forms,
+        # populate the record with their info, address conflicts
+        logger.info("Reading and mapping digital acquisition records.")
         for acqRecord in args.acquisition_record:
-            meldRecord(record,acqRecord,ReadAcquisitionRecord,AcquisitionRecordMapping)
+            meldRecord(record, acqRecord, ReadAcquisitionRecord,
+                       AcquisitionRecordMapping)
 
-        #Manual input loop
-        print("Beginning Manual Input Loop")
+        # Manual input loop
+        logger.info("Beginning Manual Input Loop")
         manualInput(record)
 
-        #Run some automated processing over the record to clean up certain values if required.
-        print("Beginning attempts at automated boolean interpretation")
-        record=booleanLoop(record,RecordFieldsBooleans())
-        #Validate the record fields against their stored regexes
-        print("Validating...")
-        record=validate(record,RecordFieldsValidation())
+        # Run some automated processing over the record to clean up
+        # certain values if required.
+        logger.info("Beginning attempts at automated boolean interpretation")
+        record = booleanLoop(record, RecordFieldsBooleans())
+        # Validate the record fields against their stored regexes
+        logger.info("Validating...")
+        record = validate(record, RecordFieldsValidation())
 
-        #File level information population
-        print("Generating file info...")
-        record['fileInfo']=generateFileEntries(args.root,args.item)
+        # File level information population
+        logger.info("Generating file info...")
+        record['fileInfo'] = generateFileEntries(args.root, args.item)
 
-        print("Computing total size")
-        record['totalDigitalSize']=computeTotalFileSizeFromRecord(record)
-        
-        #Write two records, one which contains the entirety of the record, including potential internal information, to an internal source, and another which contains information pertinent to the LDR into the admin directory
-        print("Writing whole record to out files.")
+        logger.info("Computing total size")
+        record['totalDigitalSize'] = computeTotalFileSizeFromRecord(record)
+
+        # Write two records, one which contains the entirety of the record,
+        # including potential internal information, to an internal source,
+        # and another which contains information pertinent to the LDR into
+        # the admin directory
+        logger.info("Writing whole record to out files: " +
+                    str(args.out_file))
         for filepath in args.out_file:
-            assert(writeNoClobber(record,filepath))
+            assert(writeNoClobber(record, filepath))
 
-        print("Creating subrecord")
-        pubRecord=createSubRecord(record,LDRFields())
+        logger.info("Creating subrecord")
+        pubRecord = createSubRecord(record, LDRFields())
 
-        print("Attempting to write LDR subrecord into staging structure.")
-        ldrRecordPath=None
-        try:
-            #Lets see if we are in a real (and properly formed) staging structure
-            assert(len(listdir(args.item))==1)
-            assert(isdir(join(args.item,listdir(args.item)[0])))
-            EADPath=join(args.item,listdir(args.item)[0])
-            assert(len(listdir(EADPath))==1)
-            assert(isdir(join(EADPath,listdir(EADPath)[0])))
-            accNoPath=join(EADPath,listdir(EADPath)[0])
-            assert(len(listdir(accNoPath))==2)
-            assert("data" in listdir(accNoPath) and "admin" in listdir(accNoPath))
-            ldrRecordPath=join(accNoPath,"admin")+'/record.json'
-        except AssertionError:
-            print("You don't seem to have pointed the script at a fully qualified staging structure. Please manually specify a location to save the LDR record to, otherwise leave this line blank to save only the full record.")
+        logger.info("Attempting to write LDR subrecord into staging structure.")
+        ldrRecordPath = None
+        validation = ValidateBase(args.item)
+        if validation[0] == True:
+            ldrRecordPath = join(*validation[1:], "admin", 'record.json')
+        else:
+            logger.warn("You don't seem to have pointed the script at a " +
+                        "fully qualified staging structure. Please manually " +
+                        "specify a location to save the LDR record to, " +
+                        "otherwise leave this line blank to save only " +
+                        "the full record."
+                        )
             while ldrRecordPath == None:
-                ldrRecordPath=input("LDR Record Path: ")
+                ldrRecordPath = input("LDR Record Path: ")
                 if ldrRecordPath == "":
                     break
                 if len(ldrRecordPath) > 0:
-                    ldrRecordPath=abspath(expandvars(ldrRecordPath))
-                    print("Attempted abspath "+ ldrRecordPath)
+                    ldrRecordPath = abspath(expandvars(ldrRecordPath))
+                    print("Attempted abspath " + ldrRecordPath)
                 if not isdir(ldrRecordPath):
-                    ldrRecordPath=None
+                    ldrRecordPath = None
 
         if ldrRecordPath != "":
-            writeNoClobber(pubRecord,ldrRecordPath)
-            print("LDR Record written")
+            writeNoClobber(pubRecord, ldrRecordPath)
+            logger.info("LDR Record written")
         else:
-            print("LDR Record generation skipped.")
+            logger.info("LDR Record generation skipped.")
 
-        print(json.dumps(record,indent=4,sort_keys=True))
-
-        print("COMPLETE")
-
+        logger.info(json.dumps(record, indent=4, sort_keys=True))
+        # End module code #
+        logger.info("ENDS: COMPLETE")
         return 0
     except KeyboardInterrupt:
-        logger.error("Program aborted manually")
+        logger.error("ENDS: Program aborted manually")
         return 131
-
+    except Exception as e:
+        logger.critical("ENDS: Exception ("+str(e)+")")
+        return 1
 if __name__ == "__main__":
     _exit(main())
