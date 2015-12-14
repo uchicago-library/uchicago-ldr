@@ -11,7 +11,7 @@ def RecordFieldsValidation():
             ['type', ["^AR$|^Ar$|^MS$|^Ms$|^CJA$|^OTHER$"]],\
             ['prc', ["^P$|^p$|^R$|^r$|^C$|^c$"]],\
             ['rights', [".{1,}"]],\
-            ['restrictions', ["^R-|^r-"]],\
+            ['restrictions', ["^R-|^r-|^OU$|^O$"]],\
             ['restrictionComment', []],\
             ['totalDigitalSize', []],\
             ['digitalCondition', []],\
