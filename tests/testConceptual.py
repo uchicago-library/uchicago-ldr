@@ -122,6 +122,43 @@ class testKeyValuePairList(unittest.TestCase):
         kvps = KVPList()
         self.assertFalse(kvps)
 
+    def testNest(self):
+        kvp1 = KVP('testkey1', 'testvalue1')
+        kvp2 = KVP('testkey2', 'testvalue2')
+        kvp3 = KVP('testkey3', 'testvalue3')
+
+        kvps1 = KVPList()
+        kvps2 = KVPList()
+        kvps3 = KVPList()
+
+        kvp_nest = KVP('testnest', kvps3)
+
+        kvps1.append(kvp1)
+        kvps2.append(kvp2)
+        kvps3.append(kvp3)
+
+        kvps1.append(kvp_nest)
+
+        self.assertTrue(kvps1)
+
+    def testRecursionError(self):
+        kvp1 = KVP('testkey1', 'testvalue1')
+        kvp2 = KVP('testkey2', 'testvalue2')
+        kvp3 = KVP('testkey3', 'testvalue3')
+
+        kvps1 = KVPList()
+        kvps2 = KVPList()
+        kvps3 = KVPList()
+
+        kvp_nest = KVP('testnest', kvps3)
+
+        kvps1.append(kvp1)
+        kvps2.append(kvp2)
+        kvps3.append(kvp3)
+
+        with self.assertRaises(RecursionError):
+            kvps3.append(kvp_nest)
+
 
 class testFamily(unittest.TestCase):
     def setUp(self):
