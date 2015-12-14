@@ -135,14 +135,18 @@ class Family(object):
     def check_not_flat(self):
         if self._get_flat() == True:
             raise RuntimeError
+        return True
 
     def check_flat(self):
         if self._get_flat() == False:
             raise RuntimeError
+        return True
+
     def get_uuid(self):
         return self.uuid
 
     def add_child(self, child, index=None):
+        assert(self.check_not_flat())
         assert(isinstance(child, Family) or
                isinstance(child, FilePointer))
         for cur_child in self.get_children():
@@ -169,12 +173,15 @@ class Family(object):
         return self.get_children().pop(index)
 
     def remove_child(self, child):
+        assert(self.check_not_flat())
         self.remove_child_by_index(self.get_children().index(child))
 
     def pop_child(self, child):
+        assert(self.check_not_flat())
         return self.pop_child_by_index(self.get_children().index(child))
 
     def get_child(self, child):
+        assert(self.check_not_flat())
         return self.get_children()[self.get_children().index(child)]
 
     def get_child_by_index(self, index):
@@ -251,6 +258,7 @@ class Family(object):
         self.descs = new_descs
 
     def flatten(self, return_refs=False):
+        assert(self.check_not_flat())
         flatChildArray = []
         if return_refs:
             refs = []
@@ -264,7 +272,7 @@ class Family(object):
             return refs
 
     def poof_from_dir(self, path=getcwd()):
-        assert(self._get_flat())
+        assert(self.check_flat())
 
         if len(self.get_children()) > 0:
             poofed_children=[]
@@ -281,6 +289,7 @@ class Family(object):
 
     def write_to_dir(self, path=getcwd(), clobber=False):
         from os.path import isdir
+        assert(self.check_not_flat())
         assert(isdir(path))
 
         leaf = False
